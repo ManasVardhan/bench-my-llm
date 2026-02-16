@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640">
+  <!-- Soft sky blue background -->
+  <rect width="1280" height="640" fill="#C5DCF0"/>
+  
+  <!-- Centered dark diamond -->
+  <g transform="translate(640, 260)">
+    <rect x="-75" y="-75" width="150" height="150" rx="24" fill="#2B3440" transform="rotate(45)"/>
+    <!-- Speedometer gauge -->
+    <g fill="none" stroke="white" stroke-width="5" stroke-linecap="round">
+      <!-- Gauge arc -->
+      <path d="M-30,16 A36,36 0 1,1 30,16" fill="none"/>
+      <!-- Tick marks -->
+      <line x1="-28" y1="-8" x2="-22" y2="-4"/>
+      <line x1="-18" y1="-26" x2="-14" y2="-20"/>
+      <line x1="0" y1="-32" x2="0" y2="-26"/>
+      <line x1="18" y1="-26" x2="14" y2="-20"/>
+      <line x1="28" y1="-8" x2="22" y2="-4"/>
+      <!-- Needle pointing to fast -->
+      <line x1="0" y1="4" x2="18" y2="-22" stroke-width="4"/>
+      <!-- Center dot -->
+      <circle cx="0" cy="4" r="5" fill="white" stroke="none"/>
+    </g>
+  </g>
+
+  <!-- Project name -->
+  <text x="640" y="410" text-anchor="middle" font-family="'JetBrains Mono','SF Mono','Fira Code','Courier New',monospace" font-size="36" font-weight="700" fill="#2B3440" letter-spacing="-0.5">bench-my-llm</text>
+  
+  <!-- Tagline -->
+  <text x="640" y="450" text-anchor="middle" font-family="'JetBrains Mono','SF Mono','Fira Code','Courier New',monospace" font-size="16" font-weight="400" fill="#2B3440" opacity="0.6">Dead-simple LLM benchmarking</text>
+</svg>
