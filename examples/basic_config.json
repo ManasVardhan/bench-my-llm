@@ -1,0 +1,7 @@
+{
+  "model": "gpt-4o",
+  "suite": "reasoning",
+  "base_url": null,
+  "temperature": 0.0,
+  "output": "results/gpt-4o-reasoning.json"
+}

@@ -1,0 +1,7 @@
+{
+  "models": ["gpt-4o", "gpt-4o-mini", "claude-3-sonnet-20240229"],
+  "suite": "coding",
+  "base_url": null,
+  "temperature": 0.0,
+  "output": "results/comparison.json"
+}

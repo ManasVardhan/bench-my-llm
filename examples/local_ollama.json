@@ -1,0 +1,8 @@
+{
+  "model": "llama3",
+  "suite": "all",
+  "base_url": "http://localhost:11434/v1",
+  "api_key": "ollama",
+  "temperature": 0.0,
+  "output": "results/llama3-local.json"
+}
