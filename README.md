@@ -1,6 +1,3 @@
-<p align="center">
-  <img src="assets/banner.svg" alt="bench-my-llm" width="800">
-</p>
 
 # 🏎️ bench-my-llm
 
