@@ -7,7 +7,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from .metrics import RunMetrics, compute_metrics
+from .metrics import compute_metrics
 from .runner import BenchmarkRun
 
 

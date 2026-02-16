@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .runner import BenchmarkResult, BenchmarkRun
+from .runner import BenchmarkRun
 
 
 # ---------------------------------------------------------------------------

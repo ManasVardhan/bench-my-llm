@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-import json
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock
 
-import numpy as np
 import pytest
 
-from bench_my_llm.prompts import get_suite, SUITES, Prompt, PromptSuite
+from bench_my_llm.prompts import get_suite, SUITES
 from bench_my_llm.metrics import (
     compute_latency_stats,
     estimate_cost,
