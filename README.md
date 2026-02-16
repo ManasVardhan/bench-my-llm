@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/hero.svg" alt="bench-my-llm" width="800">
+</p>
+
 # 🏎️ bench-my-llm
 
 [![PyPI version](https://img.shields.io/pypi/v/bench-my-llm)](https://pypi.org/project/bench-my-llm/)
