@@ -7,7 +7,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from openai import OpenAI
+from openai import AuthenticationError, OpenAI
 
 from .prompts import Prompt, PromptSuite
 
@@ -165,7 +165,13 @@ def run_benchmark(
     )
 
     for i, prompt in enumerate(suite.prompts):
-        result = run_single_prompt(client, model, prompt, temperature)
+        try:
+            result = run_single_prompt(client, model, prompt, temperature)
+        except AuthenticationError:
+            raise SystemExit(
+                "❌ Authentication failed. Please check your API key.\n"
+                "Set it via --api-key or the OPENAI_API_KEY environment variable."
+            )
         run.results.append(result)
         if on_progress:
             on_progress(i + 1, len(suite.prompts), result)
