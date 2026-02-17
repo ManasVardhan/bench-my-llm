@@ -4,12 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bench-my-llm"
-version = "0.1.0"
+version = "0.1.1"
 description = "Dead-simple LLM benchmarking CLI. Measure TTFT, TPS, latency, cost, and quality for any OpenAI-compatible API."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-authors = [{ name = "Manas Vardhan" }]
+authors = [{ name = "Manas Vardhan", email = "manasvardhan@gmail.com" }]
 keywords = ["llm", "benchmark", "latency", "openai", "cli"]
 classifiers = [
     "Development Status :: 4 - Beta",
