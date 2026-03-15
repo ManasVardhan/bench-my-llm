@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 import time
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from openai import AuthenticationError, OpenAI
+from openai import APIConnectionError, APITimeoutError, AuthenticationError, OpenAI, RateLimitError
 
 from .prompts import Prompt, PromptSuite
 
@@ -132,7 +133,7 @@ def run_benchmark(
     base_url: str | None = None,
     api_key: str | None = None,
     temperature: float = 0.0,
-    on_progress: callable | None = None,
+    on_progress: Callable[[int, int, object], None] | None = None,
 ) -> BenchmarkRun:
     """Run a full benchmark suite against a model.
 
@@ -171,6 +172,21 @@ def run_benchmark(
             raise SystemExit(
                 "❌ Authentication failed. Please check your API key.\n"
                 "Set it via --api-key or the OPENAI_API_KEY environment variable."
+            )
+        except RateLimitError:
+            raise SystemExit(
+                "❌ Rate limit exceeded. Wait a moment and try again, or use a "
+                "different API key with higher limits."
+            )
+        except APITimeoutError:
+            raise SystemExit(
+                "❌ API request timed out. The server may be overloaded. "
+                "Try again in a moment."
+            )
+        except APIConnectionError:
+            raise SystemExit(
+                f"❌ Could not connect to API at {base_url or 'https://api.openai.com/v1'}.\n"
+                "Check your network connection and that the base URL is correct."
             )
         run.results.append(result)
         if on_progress:

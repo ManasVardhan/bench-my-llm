@@ -149,19 +149,24 @@ def report(results_file: str) -> None:
     import json
     from pathlib import Path
 
-    data = json.loads(Path(results_file).read_text())
+    from .runner import BenchmarkResult
 
-    # Handle both single run and comparison format
+    try:
+        data = json.loads(Path(results_file).read_text())
+    except json.JSONDecodeError as exc:
+        console.print(f"[red]Invalid JSON in {results_file}: {exc}[/]")
+        raise SystemExit(1)
+
+    # Comparison format: list of run objects
     if isinstance(data, list):
-        runs = [BenchmarkRun.load(results_file)]  # try single
-        # Actually re-parse
-        from .runner import BenchmarkResult
-
-        runs = []
+        runs: list[BenchmarkRun] = []
         for item in data:
+            if not isinstance(item, dict) or "model" not in item or "results" not in item:
+                console.print("[red]Unexpected format in results file.[/]")
+                raise SystemExit(1)
             r = BenchmarkRun(
                 model=item["model"],
-                suite_name=item["suite"],
+                suite_name=item.get("suite", "unknown"),
                 base_url=item.get("base_url", ""),
                 timestamp=item.get("timestamp", ""),
             )
@@ -172,9 +177,13 @@ def report(results_file: str) -> None:
             print_report(runs[0], console)
         else:
             compare_runs(runs, console)
-    else:
+    # Single run format: plain dict
+    elif isinstance(data, dict):
         run = BenchmarkRun.load(results_file)
         print_report(run, console)
+    else:
+        console.print("[red]Unrecognized results file format.[/]")
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

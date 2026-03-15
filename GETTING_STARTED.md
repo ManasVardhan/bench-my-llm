@@ -42,7 +42,7 @@ pip install -e ".[dev]"
 pytest tests/ -v
 ```
 
-All 12 tests should pass.
+All tests should pass (88+ as of v0.1.1).
 
 ## Step 5: Try it out (no API key needed)
 
@@ -77,18 +77,18 @@ Create a file called `test_it.py`:
 ```python
 from bench_my_llm.metrics import compute_latency_stats, estimate_cost
 
-# Simulate some latency measurements (in seconds)
-latencies = [0.5, 0.8, 0.6, 1.2, 0.7, 0.9, 0.55, 0.65, 0.75, 0.85]
+# Simulate some latency measurements (in milliseconds)
+latencies = [150.0, 230.0, 180.0, 420.0, 210.0, 310.0, 175.0, 195.0, 250.0, 280.0]
 
 stats = compute_latency_stats(latencies)
 print("Latency Stats:")
-print(f"  Median (p50): {stats['p50']:.3f}s")
-print(f"  p95: {stats['p95']:.3f}s")
-print(f"  p99: {stats['p99']:.3f}s")
-print(f"  Mean: {stats['mean']:.3f}s")
+print(f"  Median (p50): {stats.p50_ms:.1f} ms")
+print(f"  p95: {stats.p95_ms:.1f} ms")
+print(f"  p99: {stats.p99_ms:.1f} ms")
+print(f"  Mean: {stats.mean_ms:.1f} ms")
 
-# Estimate cost
-cost = estimate_cost("gpt-4o", input_tokens=1000, output_tokens=500)
+# Estimate cost for 1000 prompt tokens and 500 completion tokens
+cost = estimate_cost("gpt-4o", 1000, 500)
 print(f"\nEstimated cost for gpt-4o (1K in / 500 out): ${cost:.4f}")
 ```
 
