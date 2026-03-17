@@ -16,3 +16,4 @@ env/
 .ruff_cache/
 .mypy_cache/
 results/
+.coverage
