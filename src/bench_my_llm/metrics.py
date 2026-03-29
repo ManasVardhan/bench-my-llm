@@ -14,16 +14,49 @@ from .runner import BenchmarkRun
 # ---------------------------------------------------------------------------
 COST_TABLE: dict[str, tuple[float, float]] = {
     # model_prefix: (input_per_1k, output_per_1k)
-    "gpt-4o": (0.0025, 0.01),
+    # OpenAI - sorted specific before generic to ensure correct prefix matching
+    "gpt-4.1-mini": (0.0004, 0.0016),
+    "gpt-4.1-nano": (0.0001, 0.0004),
+    "gpt-4.1": (0.002, 0.008),
     "gpt-4o-mini": (0.00015, 0.0006),
+    "gpt-4o": (0.0025, 0.01),
     "gpt-4-turbo": (0.01, 0.03),
     "gpt-4": (0.03, 0.06),
     "gpt-3.5-turbo": (0.0005, 0.0015),
+    "o4-mini": (0.0011, 0.0044),
+    "o3-mini": (0.0011, 0.0044),
+    "o3": (0.01, 0.04),
+    "o1-mini": (0.003, 0.012),
+    "o1": (0.015, 0.06),
+    # Anthropic
+    "claude-opus-4": (0.015, 0.075),
+    "claude-sonnet-4": (0.003, 0.015),
+    "claude-3.5-sonnet": (0.003, 0.015),
+    "claude-3.5-haiku": (0.0008, 0.004),
     "claude-3-opus": (0.015, 0.075),
     "claude-3-sonnet": (0.003, 0.015),
     "claude-3-haiku": (0.00025, 0.00125),
     "claude-sonnet": (0.003, 0.015),
     "claude-opus": (0.015, 0.075),
+    # Meta
+    "llama-4-maverick": (0.0005, 0.0015),
+    "llama-4-scout": (0.00018, 0.0005),
+    "llama-3.3": (0.0003, 0.0008),
+    "llama-3.1-405b": (0.003, 0.003),
+    "llama-3.1-70b": (0.0009, 0.0009),
+    "llama-3.1-8b": (0.0001, 0.0001),
+    # Mistral
+    "mistral-large": (0.002, 0.006),
+    "mistral-small": (0.0002, 0.0006),
+    # Google
+    "gemini-2.5-pro": (0.00125, 0.01),
+    "gemini-2.5-flash": (0.00015, 0.0006),
+    "gemini-2.0-flash": (0.0001, 0.0004),
+    "gemini-1.5-pro": (0.00125, 0.005),
+    "gemini-1.5-flash": (0.000075, 0.0003),
+    # DeepSeek
+    "deepseek-r1": (0.00055, 0.0022),
+    "deepseek-v3": (0.00027, 0.0011),
 }
 
 # Fallback for unknown models

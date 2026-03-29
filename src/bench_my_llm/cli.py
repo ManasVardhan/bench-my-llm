@@ -143,6 +143,47 @@ def compare(
 
 
 @cli.command()
+def models() -> None:
+    """List models with known pricing (used for cost estimation)."""
+    from rich.table import Table
+
+    from .metrics import COST_TABLE, DEFAULT_COST
+
+    table = Table(title="Known Model Pricing", border_style="green", show_lines=True)
+    table.add_column("Model", style="bold")
+    table.add_column("Input ($/1K tok)", justify="right", style="cyan")
+    table.add_column("Output ($/1K tok)", justify="right", style="yellow")
+
+    for model, (inp, out) in COST_TABLE.items():
+        table.add_row(model, f"${inp:.6f}", f"${out:.6f}")
+
+    console.print()
+    console.print(table)
+    console.print(
+        f"\n[dim]Unknown models use default pricing: "
+        f"${DEFAULT_COST[0]}/1K input, ${DEFAULT_COST[1]}/1K output[/]\n"
+    )
+
+
+@cli.command()
+def suites() -> None:
+    """List available prompt suites with descriptions."""
+    from rich.table import Table
+
+    table = Table(title="Available Prompt Suites", border_style="cyan", show_lines=True)
+    table.add_column("Suite", style="bold cyan")
+    table.add_column("Prompts", justify="right")
+    table.add_column("Description")
+
+    for name, suite in SUITES.items():
+        table.add_row(name, str(len(suite.prompts)), suite.description)
+
+    console.print()
+    console.print(table)
+    console.print()
+
+
+@cli.command()
 @click.argument("results_file", type=click.Path(exists=True))
 def report(results_file: str) -> None:
     """Display a report from a saved results JSON file."""

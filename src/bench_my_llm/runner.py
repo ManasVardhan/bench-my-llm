@@ -7,8 +7,10 @@ import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Any, cast
 
 from openai import APIConnectionError, APITimeoutError, AuthenticationError, OpenAI, RateLimitError
+from openai.types.chat import ChatCompletionChunk
 
 from .prompts import Prompt, PromptSuite
 
@@ -80,7 +82,7 @@ def run_single_prompt(
     temperature: float = 0.0,
 ) -> BenchmarkResult:
     """Benchmark a single prompt with streaming to measure TTFT."""
-    messages = [{"role": "user", "content": prompt.text}]
+    messages: list[dict[str, Any]] = [{"role": "user", "content": prompt.text}]
 
     start = time.perf_counter()
     first_token_time: float | None = None
@@ -88,13 +90,14 @@ def run_single_prompt(
 
     stream = client.chat.completions.create(
         model=model,
-        messages=messages,
+        messages=messages,  # type: ignore[arg-type]
         max_tokens=prompt.max_tokens,
         temperature=temperature,
         stream=True,
     )
 
     for chunk in stream:
+        chunk = cast(ChatCompletionChunk, chunk)
         if chunk.choices and chunk.choices[0].delta.content:
             if first_token_time is None:
                 first_token_time = time.perf_counter()
