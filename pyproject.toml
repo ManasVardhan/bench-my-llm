@@ -35,6 +35,11 @@ dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "ruff>=0.1"]
 [project.scripts]
 bench-my-llm = "bench_my_llm.cli:cli"
 
+[project.urls]
+Homepage = "https://github.com/manasvardhan/bench-my-llm"
+Repository = "https://github.com/manasvardhan/bench-my-llm"
+Issues = "https://github.com/manasvardhan/bench-my-llm/issues"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/bench_my_llm"]
 
