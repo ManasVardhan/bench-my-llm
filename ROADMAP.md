@@ -1,5 +1,10 @@
 # Roadmap - bench-my-llm
 
+## Shipped
+
+### 💰 Cost-Adjusted Leaderboard
+Rank models not just by quality and speed, but by cost-efficiency - showing the best bang-for-buck across providers. Available as the `leaderboard` command: composite value score (50% quality, 30% cost, 20% throughput), quality-per-dollar column, sortable, JSON output.
+
 ## v0.2 (Planned)
 
 ### 📄 HTML Report Export
@@ -7,9 +12,6 @@ Generate beautiful, shareable HTML benchmark reports with charts, tables, and mo
 
 ### 🦙 Ollama Auto-Detection
 Automatically detect locally running Ollama models and add them to the benchmark suite without manual configuration.
-
-### 💰 Cost-Adjusted Leaderboard
-Rank models not just by quality and speed, but by cost-efficiency - showing the best bang-for-buck across providers.
 
 ### 📊 Historical Trend Tracking
 Store benchmark results over time and visualize performance trends as models get updated or new versions are released.

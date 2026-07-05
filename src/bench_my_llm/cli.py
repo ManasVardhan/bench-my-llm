@@ -351,6 +351,76 @@ def export_cmd(results_file: str, fmt: str, output: str | None) -> None:
 
 
 @cli.command()
+@click.argument("results_files", nargs=-1, required=True, type=click.Path(exists=True))
+@click.option(
+    "--sort",
+    "sort_by",
+    type=click.Choice(["value", "quality", "cost", "speed", "quality-per-dollar"]),
+    default="value",
+    help="Ranking criterion (default: composite value score).",
+)
+@click.option("--json-output", is_flag=True, help="Output as JSON instead of a table.")
+def leaderboard(results_files: tuple[str, ...], sort_by: str, json_output: bool) -> None:
+    """Rank models by cost-adjusted value from saved result files.
+
+    Accepts one or more result JSON files (single runs or comparisons)
+    and ranks every run by a composite score balancing quality (50%),
+    cost (30%), and throughput (20%).
+
+    Example: bench-my-llm leaderboard results/*.json --sort quality-per-dollar
+    """
+    import json
+
+    from rich.table import Table
+
+    from .leaderboard import build_leaderboard, load_runs, sort_entries
+
+    try:
+        runs = load_runs(list(results_files))
+        entries = sort_entries(build_leaderboard(runs), sort_by)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise SystemExit(1)
+
+    if json_output:
+        click.echo(json.dumps([e.to_dict() for e in entries], indent=2))
+        return
+
+    console.print()
+    table = Table(
+        title=f"Cost-Adjusted Leaderboard (sorted by {sort_by})",
+        border_style="magenta",
+        show_lines=True,
+    )
+    table.add_column("Rank", justify="right", style="bold")
+    table.add_column("Model", style="bold cyan", no_wrap=True)
+    table.add_column("Value", justify="right", style="bold magenta")
+    table.add_column("Quality", justify="right")
+    table.add_column("Cost", justify="right", style="green")
+    table.add_column("Quality/$", justify="right", style="yellow")
+    table.add_column("TPS", justify="right")
+
+    medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+    for rank, e in enumerate(entries, 1):
+        qpd = "∞" if e.quality_per_dollar == float("inf") else f"{e.quality_per_dollar:,.1f}"
+        table.add_row(
+            f"{medals.get(rank, '')} {rank}".strip(),
+            e.model,
+            f"{e.value_score:.1f}",
+            f"{e.quality:.0%}",
+            f"${e.cost_usd:.4f}",
+            qpd,
+            f"{e.mean_tps}",
+        )
+
+    console.print(table)
+    console.print(
+        "\n[dim]Value score = 50% quality + 30% cost (lower is better) + "
+        "20% throughput, normalized across the field.[/]\n"
+    )
+
+
+@cli.command()
 @click.argument("results_dir", type=click.Path(exists=True))
 @click.option("--model", "-m", default=None, help="Filter by model name.")
 @click.option("--limit", "-n", default=20, help="Max number of runs to show.")

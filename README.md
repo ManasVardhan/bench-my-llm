@@ -120,6 +120,19 @@ bench-my-llm run --model gpt-4o --suite all --output results.json
 bench-my-llm report results.json
 ```
 
+### Cost-Adjusted Leaderboard
+
+Rank saved runs by value, not just raw speed. The composite score weighs
+quality (50%), cost (30%, lower is better), and throughput (20%):
+
+```bash
+bench-my-llm leaderboard results/*.json
+bench-my-llm leaderboard a.json b.json --sort quality-per-dollar
+bench-my-llm leaderboard results/*.json --json-output
+```
+
+Sort options: `value` (default), `quality`, `cost`, `speed`, `quality-per-dollar`.
+
 ### Local Models (Ollama)
 
 ```bash
