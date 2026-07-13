@@ -22,7 +22,7 @@ Point `bench-my-llm` at any OpenAI-compatible API and get latency, throughput, c
 - 🏁 **Model Comparison** - Side-by-side with winner highlights
 - 📦 **Built-in Prompt Suites** - Reasoning, coding, creative, factual
 - 🔌 **Any OpenAI-compatible API** - OpenAI, Anthropic, Ollama, vLLM, Together, and more
-- 💾 **Export to JSON** - Pipe into CI, dashboards, or your own tools
+- 💾 **Export to JSON, CSV, Markdown, HTML** - Pipe into CI, dashboards, or share a report
 
 ## 🚀 Quick Start
 
@@ -118,6 +118,23 @@ Pass your own prompts file (JSON array):
 ```bash
 bench-my-llm run --model gpt-4o --suite all --output results.json
 bench-my-llm report results.json
+
+# Convert saved results to other formats
+bench-my-llm export results.json --format markdown
+bench-my-llm export results.json --format csv -o results.csv
+```
+
+### HTML Reports
+
+Turn any saved results file into a shareable, self-contained HTML report
+with summary cards, latency tables, per-prompt quality bars, and a model
+comparison section for multi-model files. No JavaScript, no external
+assets, safe to attach to a PR or email:
+
+```bash
+bench-my-llm export results.json --format html -o report.html
+bench-my-llm export comparison.json --format html --title "GPT vs Claude" -o report.html
+open report.html
 ```
 
 ### Cost-Adjusted Leaderboard

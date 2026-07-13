@@ -229,13 +229,18 @@ def report(results_file: str) -> None:
 
 @cli.command(name="export")
 @click.argument("results_file", type=click.Path(exists=True))
-@click.option("--format", "fmt", type=click.Choice(["markdown", "csv", "json"]),
+@click.option("--format", "fmt", type=click.Choice(["markdown", "csv", "json", "html"]),
               default="markdown", help="Export format.")
 @click.option("--output", "-o", default=None, help="Output file (prints to stdout if omitted).")
-def export_cmd(results_file: str, fmt: str, output: str | None) -> None:
-    """Export benchmark results to markdown, CSV, or JSON.
+@click.option("--title", default="Benchmark Report", show_default=True,
+              help="Report title (html format only).")
+def export_cmd(results_file: str, fmt: str, output: str | None, title: str) -> None:
+    """Export benchmark results to markdown, CSV, JSON, or HTML.
 
-    Example: bench-my-llm export results.json --format markdown
+    The html format produces a self-contained shareable report with
+    summary cards, model comparison bars, and per-prompt tables.
+
+    Example: bench-my-llm export results.json --format html -o report.html
     """
     import csv
     import io
@@ -331,6 +336,11 @@ def export_cmd(results_file: str, fmt: str, output: str | None) -> None:
                     r.prompt_tokens, r.completion_tokens, f"{q:.3f}",
                 ])
         text = buf.getvalue()
+
+    elif fmt == "html":
+        from .html_report import render_html
+
+        text = render_html(runs_with_metrics, title=title)
 
     else:  # json
         text = json.dumps(
