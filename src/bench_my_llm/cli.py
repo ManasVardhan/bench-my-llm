@@ -522,5 +522,84 @@ def history(results_dir: str, model: str | None, limit: int) -> None:
     console.print(f"\n[dim]Showing {len(runs)} run(s) from {results_dir}[/]\n")
 
 
+@cli.command()
+@click.argument("results_dir", type=click.Path(exists=True))
+@click.option(
+    "--metric",
+    type=click.Choice(["quality", "tps", "ttft", "latency", "cost"]),
+    default="quality",
+    show_default=True,
+    help="Metric to trend over time.",
+)
+@click.option("--model", "-m", default=None, help="Filter by model name (substring match).")
+@click.option("--json-output", is_flag=True, help="Output as JSON instead of a table.")
+def trends(results_dir: str, metric: str, model: str | None, json_output: bool) -> None:
+    """Track how benchmark metrics change over time per model.
+
+    Point it at a directory of saved result JSON files. Runs are grouped
+    by model and ordered chronologically (run timestamp, falling back to
+    file modification time), then summarized with a sparkline and the
+    change from the first run to the latest.
+
+    Example: bench-my-llm trends ./results/ --metric latency
+    """
+    import json
+
+    from rich.table import Table
+
+    from .trends import build_trends, format_metric_value, load_trend_points, sparkline
+
+    try:
+        points = load_trend_points(results_dir)
+        model_trends = build_trends(points, model_filter=model)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise SystemExit(1)
+
+    if json_output:
+        click.echo(json.dumps([t.to_dict(metric) for t in model_trends], indent=2))
+        return
+
+    console.print()
+    table = Table(
+        title=f"Benchmark Trends ({metric}, oldest to latest)",
+        border_style="cyan",
+        show_lines=True,
+    )
+    table.add_column("Model", style="bold cyan", no_wrap=True)
+    table.add_column("Runs", justify="right")
+    table.add_column("Trend", style="magenta")
+    table.add_column("First", justify="right")
+    table.add_column("Latest", justify="right")
+    table.add_column("Change", justify="right")
+
+    arrows = {"improving": "[green]▲", "declining": "[red]▼", "flat": "[dim]="}
+    for t in model_trends:
+        values = t.series(metric)
+        direction = t.direction(metric)
+        pct = t.change_pct(metric)
+        pct_text = "n/a" if pct is None else f"{pct:+.1f}%"
+        table.add_row(
+            t.model,
+            str(len(t.points)),
+            sparkline(values),
+            format_metric_value(metric, values[0]),
+            format_metric_value(metric, values[-1]),
+            f"{arrows[direction]} {pct_text}[/]",
+        )
+
+    console.print(table)
+    single_run_models = sum(1 for t in model_trends if len(t.points) < 2)
+    if single_run_models:
+        console.print(
+            f"\n[dim]{single_run_models} model(s) have only one run, "
+            "add more result files to see a trend.[/]"
+        )
+    console.print(
+        "\n[dim]▲ improving, ▼ declining, = flat. "
+        "For ttft, latency, and cost, lower is better.[/]\n"
+    )
+
+
 if __name__ == "__main__":
     cli()

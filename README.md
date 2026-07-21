@@ -23,6 +23,7 @@ Point `bench-my-llm` at any OpenAI-compatible API and get latency, throughput, c
 - 📦 **Built-in Prompt Suites** - Reasoning, coding, creative, factual
 - 🔌 **Any OpenAI-compatible API** - OpenAI, Anthropic, Ollama, vLLM, Together, and more
 - 💾 **Export to JSON, CSV, Markdown, HTML** - Pipe into CI, dashboards, or share a report
+- 📈 **Historical Trends** - Track quality, speed, and cost per model over time with sparklines
 
 ## 🚀 Quick Start
 
@@ -149,6 +150,30 @@ bench-my-llm leaderboard results/*.json --json-output
 ```
 
 Sort options: `value` (default), `quality`, `cost`, `speed`, `quality-per-dollar`.
+
+### Historical Trends
+
+Save each benchmark run to a results directory, then track how every
+model's numbers move over time. Runs are grouped per model and ordered
+chronologically, with a terminal sparkline and the change from the first
+run to the latest:
+
+```bash
+bench-my-llm run -m gpt-4o -s reasoning -o results/gpt4o-$(date +%F).json
+bench-my-llm trends ./results/
+bench-my-llm trends ./results/ --metric latency
+bench-my-llm trends ./results/ -m gpt-4o --metric cost --json-output
+```
+
+```
+Model     Runs  Trend      First   Latest  Change
+gpt-4o       5  ▂▃▅▆█        61%      74%  ▲ +21.3%
+llama3       4  ▅▄▃▂         55%      48%  ▼ -12.7%
+```
+
+Metrics: `quality` (default), `tps`, `ttft`, `latency`, `cost`. For
+`ttft`, `latency`, and `cost`, lower is better and the arrows account
+for that.
 
 ### Local Models (Ollama)
 
