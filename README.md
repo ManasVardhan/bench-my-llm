@@ -24,6 +24,7 @@ Point `bench-my-llm` at any OpenAI-compatible API and get latency, throughput, c
 - 🔌 **Any OpenAI-compatible API** - OpenAI, Anthropic, Ollama, vLLM, Together, and more
 - 💾 **Export to JSON, CSV, Markdown, HTML** - Pipe into CI, dashboards, or share a report
 - 📈 **Historical Trends** - Track quality, speed, and cost per model over time with sparklines
+- 🦙 **Ollama Auto-Detection** - Find local models and benchmark them with a single flag
 
 ## 🚀 Quick Start
 
@@ -176,6 +177,33 @@ Metrics: `quality` (default), `tps`, `ttft`, `latency`, `cost`. For
 for that.
 
 ### Local Models (Ollama)
+
+bench-my-llm auto-detects a running Ollama server. List what is
+installed locally:
+
+```bash
+bench-my-llm ollama
+```
+
+```
+              Local Ollama Models (2)
+Model         Params  Quant    Size    Family
+llama3:8b     8B      Q4_0     4.7 GB  llama
+phi3:mini     3.8B    Q4_K_M   2.3 GB  phi3
+```
+
+Then benchmark with the `--ollama` flag, no URL or key needed. Tagless
+names resolve automatically (`llama3` finds `llama3:latest`):
+
+```bash
+bench-my-llm run --ollama -m llama3
+bench-my-llm compare --ollama llama3 phi3 -s coding
+bench-my-llm ollama --json-output          # machine-readable model list
+bench-my-llm ollama --url http://gpu:11434 # remote Ollama host
+```
+
+If a model is not installed, the error lists everything that is. Manual
+configuration still works for any OpenAI-compatible endpoint:
 
 ```bash
 bench-my-llm run --model llama3 --base-url http://localhost:11434/v1 --api-key ollama

@@ -8,12 +8,56 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from . import __version__
 from .compare import compare_runs
+from .ollama import (
+    DEFAULT_OLLAMA_URL,
+    OllamaNotRunningError,
+    detect_ollama_models,
+    openai_base_url,
+    resolve_ollama_model,
+)
 from .prompts import get_suite, SUITES
 from .reporter import print_report
 from .runner import BenchmarkRun, run_benchmark
 
 
 console = Console()
+
+
+def _resolve_ollama_setup(
+    models: list[str],
+    base_url: str | None,
+    api_key: str | None,
+) -> tuple[list[str], str, str]:
+    """Detect local Ollama, resolve model names, and fill connection defaults.
+
+    Exits with a friendly message when Ollama is unreachable, has no
+    models, or a requested model is not installed.
+    """
+    from rich.markup import escape
+
+    try:
+        available = detect_ollama_models()
+    except OllamaNotRunningError as exc:
+        console.print(f"[red]{escape(str(exc))}[/]")
+        console.print("[dim]Is Ollama running? Start it with: ollama serve[/dim]")
+        raise SystemExit(1)
+
+    if not available:
+        console.print("[red]Ollama is running but has no models installed.[/]")
+        console.print("[dim]Pull one first, e.g.: ollama pull llama3[/dim]")
+        raise SystemExit(1)
+
+    resolved: list[str] = []
+    for model in models:
+        match = resolve_ollama_model(model, available)
+        if match is None:
+            names = ", ".join(m.name for m in available)
+            console.print(f"[red]Model '{escape(model)}' not found in local Ollama.[/]")
+            console.print(f"[dim]Available: {escape(names)}[/dim]")
+            raise SystemExit(1)
+        resolved.append(match)
+
+    return resolved, base_url or openai_base_url(), api_key or "ollama"
 
 
 @click.group()
@@ -35,6 +79,8 @@ def cli() -> None:
 @click.option("--api-key", "-k", default=None, help="API key (defaults to OPENAI_API_KEY)")
 @click.option("--temperature", "-t", default=0.0, type=float, help="Sampling temperature")
 @click.option("--output", "-o", default=None, help="Save results to JSON file")
+@click.option("--ollama", is_flag=True,
+              help="Benchmark a local Ollama model (auto-detects the server).")
 def run(
     model: str,
     suite: str,
@@ -42,8 +88,12 @@ def run(
     api_key: str | None,
     temperature: float,
     output: str | None,
+    ollama: bool,
 ) -> None:
     """Run a benchmark suite against a model."""
+    if ollama:
+        (model,), base_url, api_key = _resolve_ollama_setup([model], base_url, api_key)
+
     prompt_suite = get_suite(suite)
     console.print(
         f"\n[bold cyan]🏎️  Benchmarking[/] [white]{model}[/] "
@@ -89,6 +139,8 @@ def run(
 @click.option("--api-key", "-k", default=None, help="API key")
 @click.option("--temperature", "-t", default=0.0, type=float)
 @click.option("--output", "-o", default=None, help="Save results to JSON file")
+@click.option("--ollama", is_flag=True,
+              help="Benchmark local Ollama models (auto-detects the server).")
 def compare(
     models: tuple[str, ...],
     suite: str,
@@ -96,11 +148,16 @@ def compare(
     api_key: str | None,
     temperature: float,
     output: str | None,
+    ollama: bool,
 ) -> None:
     """Compare two or more models side-by-side."""
     if len(models) < 2:
         console.print("[red]Provide at least 2 model names to compare.[/]")
         raise SystemExit(1)
+
+    if ollama:
+        resolved, base_url, api_key = _resolve_ollama_setup(list(models), base_url, api_key)
+        models = tuple(resolved)
 
     prompt_suite = get_suite(suite)
     runs: list[BenchmarkRun] = []
@@ -181,6 +238,65 @@ def suites() -> None:
     console.print()
     console.print(table)
     console.print()
+
+
+@cli.command(name="ollama")
+@click.option("--url", "base_url", default=DEFAULT_OLLAMA_URL, show_default=True,
+              help="Ollama server URL.")
+@click.option("--json-output", is_flag=True, help="Output as JSON instead of a table.")
+def ollama_cmd(base_url: str, json_output: bool) -> None:
+    """List locally installed Ollama models.
+
+    Auto-detects a running Ollama server and shows every installed
+    model, ready to benchmark via `run --ollama` or `compare --ollama`.
+    """
+    import json as json_mod
+
+    from rich.markup import escape
+
+    try:
+        models = detect_ollama_models(base_url)
+    except OllamaNotRunningError as exc:
+        console.print(f"[red]{escape(str(exc))}[/]")
+        console.print("[dim]Is Ollama running? Start it with: ollama serve[/dim]")
+        raise SystemExit(1)
+
+    if json_output:
+        click.echo(json_mod.dumps([m.to_dict() for m in models], indent=2))
+        return
+
+    if not models:
+        console.print("[yellow]Ollama is running but has no models installed.[/]")
+        console.print("[dim]Pull one first, e.g.: ollama pull llama3[/dim]")
+        return
+
+    from rich.table import Table
+
+    table = Table(
+        title=f"Local Ollama Models ({len(models)})",
+        border_style="magenta",
+        show_lines=True,
+    )
+    table.add_column("Model", style="bold magenta")
+    table.add_column("Params", justify="right")
+    table.add_column("Quant")
+    table.add_column("Size", justify="right")
+    table.add_column("Family", style="dim")
+
+    for model in models:
+        table.add_row(
+            model.name,
+            model.parameter_size or "?",
+            model.quantization or "?",
+            model.size_display,
+            model.family or "?",
+        )
+
+    console.print()
+    console.print(table)
+    console.print(
+        f"\n[dim]Benchmark one with: bench-my-llm run --ollama -m {escape(models[0].name)}[/]\n"
+    )
 
 
 @cli.command()
