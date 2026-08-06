@@ -25,6 +25,7 @@ Point `bench-my-llm` at any OpenAI-compatible API and get latency, throughput, c
 - 💾 **Export to JSON, CSV, Markdown, HTML** - Pipe into CI, dashboards, or share a report
 - 📈 **Historical Trends** - Track quality, speed, and cost per model over time with sparklines
 - 🦙 **Ollama Auto-Detection** - Find local models and benchmark them with a single flag
+- 🧮 **Custom Prompt Suites** - Load your own domain-specific prompts from JSON or YAML files
 
 ## 🚀 Quick Start
 
@@ -95,15 +96,38 @@ bench-my-llm compare gpt-4o gpt-4o-mini --suite reasoning
 
 ## 📖 Usage
 
-### Custom Prompts
+### Custom Prompt Suites
 
-Pass your own prompts file (JSON array):
+Benchmark with your own domain-specific prompts by passing a JSON or
+YAML file path to `--suite`:
+
+```bash
+bench-my-llm run --model gpt-4o --suite my_suite.json
+bench-my-llm compare gpt-4o gpt-4o-mini --suite ./suites/support.yaml
+```
+
+Suite file format (see `examples/custom_suite.json` for a full example):
 
 ```json
-[
-  {"text": "Explain quantum computing", "category": "factual", "reference": "...", "max_tokens": 256}
-]
+{
+  "name": "support-bot",
+  "description": "Customer support prompts",
+  "prompts": [
+    {
+      "text": "Explain our 30-day return policy in two sentences.",
+      "category": "support",
+      "reference": "Items can be returned within 30 days for a full refund.",
+      "max_tokens": 256
+    }
+  ]
+}
 ```
+
+Only `text` is required per prompt. `category` defaults to `custom`,
+`reference` to empty (skips quality scoring), and `max_tokens` to 512.
+Files are validated with friendly error messages, including typo
+detection for unknown keys. YAML files need the optional extra:
+`pip install 'bench-my-llm[yaml]'`.
 
 ### Prompt Suites
 

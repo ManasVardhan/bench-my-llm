@@ -1,0 +1,22 @@
+{
+  "name": "support-bot",
+  "description": "Domain-specific prompts for a customer support assistant",
+  "prompts": [
+    {
+      "text": "A customer says their order arrived damaged. Write a short, empathetic reply offering a replacement or refund.",
+      "category": "support",
+      "reference": "Apologize, acknowledge the damage, offer replacement or refund, provide next steps.",
+      "max_tokens": 256
+    },
+    {
+      "text": "Explain our 30-day return policy in two sentences a customer can understand.",
+      "category": "support",
+      "reference": "Items can be returned within 30 days of delivery for a full refund if unused and in original packaging."
+    },
+    {
+      "text": "A user cannot log in and has already reset their password twice. List 3 troubleshooting steps to suggest.",
+      "category": "support",
+      "reference": "Clear browser cache and cookies, try another browser or incognito, check caps lock and email spelling, contact support to verify account status."
+    }
+  ]
+}

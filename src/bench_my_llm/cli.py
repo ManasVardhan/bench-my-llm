@@ -18,9 +18,36 @@ from .ollama import (
 from .prompts import get_suite, SUITES
 from .reporter import print_report
 from .runner import BenchmarkRun, run_benchmark
+from .suite_file import SuiteFileError, load_suite_file, looks_like_suite_file
 
 
 console = Console()
+
+
+def _resolve_suite(value: str):
+    """Resolve a suite option to a PromptSuite.
+
+    Accepts a built-in suite name or a path to a custom JSON/YAML
+    suite file. Exits with a friendly message on any problem.
+    """
+    from rich.markup import escape
+
+    if value in SUITES:
+        return get_suite(value)
+
+    if looks_like_suite_file(value):
+        try:
+            return load_suite_file(value)
+        except SuiteFileError as exc:
+            console.print(f"[red]{escape(str(exc))}[/]")
+            raise SystemExit(1)
+
+    available = ", ".join(SUITES.keys())
+    console.print(f"[red]Unknown suite '{escape(value)}'.[/]")
+    console.print(
+        f"[dim]Available: {available}, or pass a path to a JSON/YAML suite file.[/dim]"
+    )
+    raise SystemExit(1)
 
 
 def _resolve_ollama_setup(
@@ -72,8 +99,7 @@ def cli() -> None:
     "--suite",
     "-s",
     default="all",
-    type=click.Choice(list(SUITES.keys())),
-    help="Prompt suite to run",
+    help="Built-in suite name or path to a custom JSON/YAML suite file",
 )
 @click.option("--base-url", "-u", default=None, help="API base URL")
 @click.option("--api-key", "-k", default=None, help="API key (defaults to OPENAI_API_KEY)")
@@ -94,7 +120,7 @@ def run(
     if ollama:
         (model,), base_url, api_key = _resolve_ollama_setup([model], base_url, api_key)
 
-    prompt_suite = get_suite(suite)
+    prompt_suite = _resolve_suite(suite)
     console.print(
         f"\n[bold cyan]🏎️  Benchmarking[/] [white]{model}[/] "
         f"with [yellow]{prompt_suite.name}[/] suite ({len(prompt_suite.prompts)} prompts)\n"
@@ -132,8 +158,7 @@ def run(
     "--suite",
     "-s",
     default="reasoning",
-    type=click.Choice(list(SUITES.keys())),
-    help="Prompt suite to run",
+    help="Built-in suite name or path to a custom JSON/YAML suite file",
 )
 @click.option("--base-url", "-u", default=None, help="API base URL")
 @click.option("--api-key", "-k", default=None, help="API key")
@@ -159,7 +184,7 @@ def compare(
         resolved, base_url, api_key = _resolve_ollama_setup(list(models), base_url, api_key)
         models = tuple(resolved)
 
-    prompt_suite = get_suite(suite)
+    prompt_suite = _resolve_suite(suite)
     runs: list[BenchmarkRun] = []
 
     for model in models:
@@ -237,7 +262,10 @@ def suites() -> None:
 
     console.print()
     console.print(table)
-    console.print()
+    console.print(
+        "\n[dim]Custom suites: pass a JSON/YAML file path to --suite, "
+        "e.g. bench-my-llm run -m gpt-4o -s my_suite.json[/]\n"
+    )
 
 
 @cli.command(name="ollama")

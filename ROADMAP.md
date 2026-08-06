@@ -14,10 +14,13 @@ Store benchmark results over time and visualize performance trends as models get
 ### 🦙 Ollama Auto-Detection
 Automatically detect locally running Ollama models and benchmark them without manual configuration. The `ollama` command lists installed models (size, params, quantization, JSON output), and `run --ollama` / `compare --ollama` resolve model names against the local server and fill in the OpenAI-compatible endpoint and API key automatically.
 
+### 🧮 Custom Prompt Suites from Files
+Load your own prompt suites from a JSON or YAML file so benchmarks can use domain-specific prompts and references. Pass a file path to `--suite` on `run` or `compare`. Files are validated with friendly errors (missing text, unknown keys, bad max_tokens), prompts get sensible defaults, and YAML support comes via the optional `bench-my-llm[yaml]` extra. See `examples/custom_suite.json`.
+
 ## v0.2 (Planned)
 
-### 🧮 Custom Prompt Suites from Files
-Load your own prompt suites from a JSON or YAML file so benchmarks can use domain-specific prompts and references.
+### 📦 Suite Packs
+Share and install community prompt suites as versioned packs, with a `suite install` command and a simple registry format.
 
 ---
 
