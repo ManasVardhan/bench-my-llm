@@ -17,10 +17,13 @@ Automatically detect locally running Ollama models and benchmark them without ma
 ### 🧮 Custom Prompt Suites from Files
 Load your own prompt suites from a JSON or YAML file so benchmarks can use domain-specific prompts and references. Pass a file path to `--suite` on `run` or `compare`. Files are validated with friendly errors (missing text, unknown keys, bad max_tokens), prompts get sensible defaults, and YAML support comes via the optional `bench-my-llm[yaml]` extra. See `examples/custom_suite.json`.
 
+### 📦 Suite Packs
+Share and install community prompt suites as versioned packs. A registry is a JSON document (local file or HTTP URL) mapping pack names to suite files, with relative URLs resolved against the registry location. `suite install` fetches and validates a pack before writing it to `~/.bench-my-llm/suites`, `suite list` and `suite remove` manage installed packs, and `--suite <pack name>` works on `run` and `compare`. Default registry via `BENCH_MY_LLM_REGISTRY`, packs directory override via `BENCH_MY_LLM_HOME`, example registry in `examples/registry.json`.
+
 ## v0.2 (Planned)
 
-### 📦 Suite Packs
-Share and install community prompt suites as versioned packs, with a `suite install` command and a simple registry format.
+### 🧪 Suite Pack Publishing
+Generate a registry entry and validate a suite for sharing with a `suite publish` helper, so teams can maintain their own pack registries with less hand-editing.
 
 ---
 

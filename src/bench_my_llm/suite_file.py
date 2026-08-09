@@ -59,6 +59,25 @@ def load_suite_file(path: str | Path) -> PromptSuite:
     return _build_suite(data, file_path)
 
 
+def parse_suite_text(text: str, suffix: str, origin: str | Path) -> PromptSuite:
+    """Parse and validate suite content that is not on disk yet.
+
+    Used by suite pack installation, where content is fetched from a
+    registry URL before being written locally. The origin is only used
+    in error messages.
+
+    Raises SuiteFileError with a friendly message on any problem.
+    """
+    suffix = suffix.lower()
+    if suffix not in SUITE_FILE_EXTENSIONS:
+        raise SuiteFileError(
+            f"Unsupported suite file extension '{suffix}' for {origin}. "
+            f"Use one of: {', '.join(SUITE_FILE_EXTENSIONS)}"
+        )
+    data = _parse(text, suffix, Path(origin))
+    return _build_suite(data, Path(origin))
+
+
 def _parse(text: str, suffix: str, file_path: Path) -> Any:
     if suffix == ".json":
         import json

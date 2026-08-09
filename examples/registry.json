@@ -1,0 +1,9 @@
+{
+  "packs": {
+    "example-basics": {
+      "version": "1.0.0",
+      "description": "Example pack pointing at the custom suite next to this registry",
+      "url": "custom_suite.json"
+    }
+  }
+}

@@ -27,10 +27,13 @@ console = Console()
 def _resolve_suite(value: str):
     """Resolve a suite option to a PromptSuite.
 
-    Accepts a built-in suite name or a path to a custom JSON/YAML
-    suite file. Exits with a friendly message on any problem.
+    Accepts a built-in suite name, a path to a custom JSON/YAML suite
+    file, or the name of an installed suite pack. Exits with a friendly
+    message on any problem.
     """
     from rich.markup import escape
+
+    from .packs import find_installed
 
     if value in SUITES:
         return get_suite(value)
@@ -42,10 +45,19 @@ def _resolve_suite(value: str):
             console.print(f"[red]{escape(str(exc))}[/]")
             raise SystemExit(1)
 
+    installed = find_installed(value)
+    if installed is not None:
+        try:
+            return load_suite_file(installed)
+        except SuiteFileError as exc:
+            console.print(f"[red]{escape(str(exc))}[/]")
+            raise SystemExit(1)
+
     available = ", ".join(SUITES.keys())
     console.print(f"[red]Unknown suite '{escape(value)}'.[/]")
     console.print(
-        f"[dim]Available: {available}, or pass a path to a JSON/YAML suite file.[/dim]"
+        f"[dim]Available: {available}, a path to a JSON/YAML suite file, "
+        f"or an installed pack name (see bench-my-llm suite list).[/dim]"
     )
     raise SystemExit(1)
 
@@ -266,6 +278,117 @@ def suites() -> None:
         "\n[dim]Custom suites: pass a JSON/YAML file path to --suite, "
         "e.g. bench-my-llm run -m gpt-4o -s my_suite.json[/]\n"
     )
+
+
+@cli.group()
+def suite() -> None:
+    """Manage installable suite packs (install, list, remove)."""
+
+
+@suite.command(name="install")
+@click.argument("name")
+@click.option(
+    "--registry",
+    "-r",
+    default=None,
+    help="Registry JSON URL or file path (defaults to BENCH_MY_LLM_REGISTRY).",
+)
+def suite_install(name: str, registry: str | None) -> None:
+    """Install a suite pack by name from a registry.
+
+    Example: bench-my-llm suite install support-basics -r registry.json
+    """
+    from rich.markup import escape
+
+    from .packs import PackError, default_registry, install_pack
+
+    source = registry or default_registry()
+    if not source:
+        console.print(
+            "[red]No registry given.[/] Pass --registry or set the "
+            "BENCH_MY_LLM_REGISTRY environment variable."
+        )
+        raise SystemExit(1)
+
+    try:
+        pack = install_pack(name, source)
+    except PackError as exc:
+        console.print(f"[red]{escape(str(exc))}[/]")
+        raise SystemExit(1)
+
+    console.print(
+        f"[green]Installed[/] [bold cyan]{pack.name}[/] "
+        f"v{pack.version} -> {pack.file}"
+    )
+    console.print(
+        f"[dim]Use it with: bench-my-llm run -m <model> -s {pack.name}[/dim]"
+    )
+
+
+@suite.command(name="list")
+@click.option("--json-output", is_flag=True, help="Output as JSON instead of a table.")
+def suite_list(json_output: bool) -> None:
+    """List installed suite packs."""
+    import json as json_mod
+
+    from .packs import list_installed, packs_dir
+
+    installed = list_installed()
+
+    if json_output:
+        data = [
+            {
+                "name": p.name,
+                "version": p.version,
+                "description": p.description,
+                "source": p.source,
+                "file": str(p.file),
+            }
+            for p in installed
+        ]
+        click.echo(json_mod.dumps(data, indent=2))
+        return
+
+    if not installed:
+        console.print(
+            f"[dim]No suite packs installed in {packs_dir()}. "
+            "Install one with: bench-my-llm suite install <name> -r <registry>[/dim]"
+        )
+        return
+
+    from rich.table import Table
+
+    table = Table(title="Installed Suite Packs", border_style="cyan", show_lines=True)
+    table.add_column("Pack", style="bold cyan")
+    table.add_column("Version", justify="right")
+    table.add_column("Description")
+    table.add_column("Source", style="dim")
+
+    for p in installed:
+        table.add_row(p.name, p.version, p.description, p.source)
+
+    console.print()
+    console.print(table)
+    console.print(
+        "\n[dim]Use with: bench-my-llm run -m <model> -s <pack name>[/dim]\n"
+    )
+
+
+@suite.command(name="remove")
+@click.argument("name")
+def suite_remove(name: str) -> None:
+    """Remove an installed suite pack."""
+    from rich.markup import escape
+
+    from .packs import PackError, remove_pack
+
+    try:
+        remove_pack(name)
+    except PackError as exc:
+        console.print(f"[red]{escape(str(exc))}[/]")
+        raise SystemExit(1)
+
+    console.print(f"[green]Removed[/] [bold cyan]{name}[/]")
 
 
 @cli.command(name="ollama")

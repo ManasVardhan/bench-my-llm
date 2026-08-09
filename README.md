@@ -26,6 +26,7 @@ Point `bench-my-llm` at any OpenAI-compatible API and get latency, throughput, c
 - 📈 **Historical Trends** - Track quality, speed, and cost per model over time with sparklines
 - 🦙 **Ollama Auto-Detection** - Find local models and benchmark them with a single flag
 - 🧮 **Custom Prompt Suites** - Load your own domain-specific prompts from JSON or YAML files
+- 📦 **Suite Packs** - Install shareable prompt suites by name from a simple JSON registry
 
 ## 🚀 Quick Start
 
@@ -128,6 +129,48 @@ Only `text` is required per prompt. `category` defaults to `custom`,
 Files are validated with friendly error messages, including typo
 detection for unknown keys. YAML files need the optional extra:
 `pip install 'bench-my-llm[yaml]'`.
+
+### Suite Packs
+
+Share suites with your team and install them by name. A registry is a
+JSON document (local file or HTTP URL) mapping pack names to suite
+files:
+
+```json
+{
+  "packs": {
+    "support-basics": {
+      "version": "1.0.0",
+      "description": "Customer support prompts",
+      "url": "support_basics.json"
+    }
+  }
+}
+```
+
+Pack URLs can be absolute (http, https, or a filesystem path) or
+relative to the registry location, so a registry can live next to its
+suite files in a repo or on any static file host.
+
+```bash
+# Install a pack (validated before it lands on disk)
+bench-my-llm suite install support-basics --registry https://example.com/registry.json
+
+# Or set a default registry once
+export BENCH_MY_LLM_REGISTRY=https://example.com/registry.json
+bench-my-llm suite install support-basics
+
+# See what is installed, then benchmark with a pack by name
+bench-my-llm suite list
+bench-my-llm run --model gpt-4o --suite support-basics
+
+# Remove a pack
+bench-my-llm suite remove support-basics
+```
+
+Installed packs live in `~/.bench-my-llm/suites` (override the base
+directory with `BENCH_MY_LLM_HOME`). Try it locally with the bundled
+example: `bench-my-llm suite install example-basics -r examples/registry.json`.
 
 ### Prompt Suites
 
