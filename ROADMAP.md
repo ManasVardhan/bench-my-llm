@@ -20,10 +20,13 @@ Load your own prompt suites from a JSON or YAML file so benchmarks can use domai
 ### 📦 Suite Packs
 Share and install community prompt suites as versioned packs. A registry is a JSON document (local file or HTTP URL) mapping pack names to suite files, with relative URLs resolved against the registry location. `suite install` fetches and validates a pack before writing it to `~/.bench-my-llm/suites`, `suite list` and `suite remove` manage installed packs, and `--suite <pack name>` works on `run` and `compare`. Default registry via `BENCH_MY_LLM_REGISTRY`, packs directory override via `BENCH_MY_LLM_HOME`, example registry in `examples/registry.json`.
 
+### 🧪 Suite Pack Publishing
+Generate a registry entry and validate a suite for sharing with a `suite publish` helper, so teams can maintain their own pack registries with less hand-editing. Without `--registry` it prints the validated entry as JSON; with `--registry` it merges the entry into a local registry file (created if missing), preserving other entries, storing relative URLs when the suite sits next to the registry, and requiring `--force` to overwrite an existing pack.
+
 ## v0.2 (Planned)
 
-### 🧪 Suite Pack Publishing
-Generate a registry entry and validate a suite for sharing with a `suite publish` helper, so teams can maintain their own pack registries with less hand-editing.
+### 🔁 Suite Pack Updates
+A `suite update` command that re-fetches installed packs from their recorded registry source and reports version changes.
 
 ---
 

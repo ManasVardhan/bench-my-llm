@@ -271,6 +271,137 @@ def remove_pack(name: str, directory: Path | None = None) -> None:
     _save_manifest(directory, manifest)
 
 
+def _validate_pack_name(name: str) -> str:
+    """Validate a pack name for publishing and return it stripped."""
+    name = name.strip()
+    if not name:
+        raise PackError("Pack name must not be empty.")
+    if any(sep in name for sep in ("/", "\\")) or name in (".", ".."):
+        raise PackError(
+            f"Pack name '{name}' must not contain path separators."
+        )
+    return name
+
+
+def build_registry_entry(
+    suite_path: str | Path,
+    name: str | None = None,
+    version: str = "1.0.0",
+    description: str | None = None,
+    registry_path: str | Path | None = None,
+) -> tuple[str, dict[str, str]]:
+    """Validate a suite file and build its registry entry.
+
+    Returns (pack name, entry dict) where the entry has version,
+    description, and url keys ready to drop into a registry's packs
+    mapping. The name defaults to the suite file stem and the
+    description defaults to the suite's own description. When a
+    registry path is given and the suite file lives under the
+    registry's directory, the url is stored relative to the registry
+    so the pair stays portable. Raises PackError on any problem.
+    """
+    path = Path(suite_path).expanduser()
+    suffix = path.suffix.lower()
+    if suffix not in SUITE_FILE_EXTENSIONS:
+        raise PackError(
+            f"Unsupported suite file type '{suffix or path.name}'. "
+            f"Use one of: {', '.join(SUITE_FILE_EXTENSIONS)}"
+        )
+    content = _fetch(str(path), "suite")
+    try:
+        suite = parse_suite_text(content, suffix, path)
+    except SuiteFileError as exc:
+        raise PackError(f"Suite file is not a valid prompt suite: {exc}") from exc
+
+    pack_name = _validate_pack_name(name if name is not None else path.stem)
+    version = version.strip()
+    if not version:
+        raise PackError("Version must not be empty.")
+
+    url = str(path.resolve())
+    if registry_path is not None and not _is_http(str(registry_path)):
+        registry_dir = Path(registry_path).expanduser().resolve().parent
+        try:
+            url = path.resolve().relative_to(registry_dir).as_posix()
+        except ValueError:
+            pass
+
+    entry = {
+        "version": version,
+        "description": (
+            description if description is not None else suite.description or ""
+        ),
+        "url": url,
+    }
+    return pack_name, entry
+
+
+def publish_pack(
+    suite_path: str | Path,
+    registry_path: str | Path,
+    name: str | None = None,
+    version: str = "1.0.0",
+    description: str | None = None,
+    force: bool = False,
+) -> PackInfo:
+    """Validate a suite and add or update its entry in a local registry file.
+
+    Creates the registry file if it does not exist. Existing entries
+    for other packs are preserved. Re-publishing an existing pack name
+    requires force=True. Raises PackError on any problem.
+    """
+    if _is_http(str(registry_path)):
+        raise PackError(
+            "Cannot publish to an HTTP registry. Publish to a local registry "
+            "file and host it wherever your team fetches it from."
+        )
+
+    registry_file = Path(registry_path).expanduser()
+    pack_name, entry = build_registry_entry(
+        suite_path, name=name, version=version,
+        description=description, registry_path=registry_file,
+    )
+
+    if registry_file.is_file():
+        text = registry_file.read_text(encoding="utf-8")
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise PackError(
+                f"Invalid JSON in registry {registry_file}: {exc}"
+            ) from exc
+        if not isinstance(data, dict) or not isinstance(data.get("packs"), dict):
+            raise PackError(
+                f"Registry {registry_file} must be a JSON object with a "
+                "'packs' mapping."
+            )
+    else:
+        data = {"packs": {}}
+
+    if pack_name in data["packs"] and not force:
+        existing = data["packs"][pack_name]
+        existing_version = (
+            existing.get("version", "?") if isinstance(existing, dict) else "?"
+        )
+        raise PackError(
+            f"Pack '{pack_name}' already exists in {registry_file} "
+            f"(v{existing_version}). Use --force to overwrite it."
+        )
+
+    data["packs"][pack_name] = entry
+    registry_file.parent.mkdir(parents=True, exist_ok=True)
+    registry_file.write_text(
+        json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+    return PackInfo(
+        name=pack_name,
+        version=entry["version"],
+        description=entry["description"],
+        url=entry["url"],
+    )
+
+
 def find_installed(name: str, directory: Path | None = None) -> Path | None:
     """Return the suite file path for an installed pack name, if any."""
     directory = directory if directory is not None else packs_dir()

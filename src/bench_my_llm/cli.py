@@ -374,6 +374,75 @@ def suite_list(json_output: bool) -> None:
     )
 
 
+@suite.command(name="publish")
+@click.argument("suite_file", type=click.Path(exists=True))
+@click.option(
+    "--registry",
+    "-r",
+    default=None,
+    help="Local registry JSON file to add the pack to (created if missing).",
+)
+@click.option("--name", "-n", default=None,
+              help="Pack name (defaults to the suite file stem).")
+@click.option("--pack-version", "-v", "pack_version", default="1.0.0",
+              show_default=True, help="Pack version.")
+@click.option("--description", "-d", default=None,
+              help="Pack description (defaults to the suite's own description).")
+@click.option("--force", is_flag=True,
+              help="Overwrite an existing pack entry with the same name.")
+def suite_publish(
+    suite_file: str,
+    registry: str | None,
+    name: str | None,
+    pack_version: str,
+    description: str | None,
+    force: bool,
+) -> None:
+    """Validate a suite file and publish it to a pack registry.
+
+    Without --registry, the validated registry entry is printed as JSON
+    so you can paste it into a registry by hand. With --registry, the
+    entry is merged into the registry file (created if missing), using
+    a relative URL when the suite lives next to the registry.
+
+    Example: bench-my-llm suite publish my_suite.json -r registry.json
+    """
+    import json as json_mod
+
+    from rich.markup import escape
+
+    from .packs import PackError, build_registry_entry, publish_pack
+
+    try:
+        if registry is None:
+            pack_name, entry = build_registry_entry(
+                suite_file, name=name, version=pack_version,
+                description=description,
+            )
+            click.echo(json_mod.dumps({pack_name: entry}, indent=2))
+            console.print(
+                "[dim]Add this under the 'packs' key of your registry, or "
+                "pass --registry to write it directly.[/dim]"
+            )
+            return
+        pack = publish_pack(
+            suite_file, registry, name=name, version=pack_version,
+            description=description, force=force,
+        )
+    except PackError as exc:
+        console.print(f"[red]{escape(str(exc))}[/]")
+        raise SystemExit(1)
+
+    console.print(
+        f"[green]Published[/] [bold cyan]{pack.name}[/] v{pack.version} "
+        f"-> {registry}"
+    )
+    console.print(
+        f"[dim]Install it with: bench-my-llm suite install {pack.name} "
+        f"-r {registry}[/dim]"
+    )
+
+
 @suite.command(name="remove")
 @click.argument("name")
 def suite_remove(name: str) -> None:

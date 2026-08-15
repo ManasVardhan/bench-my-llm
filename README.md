@@ -172,6 +172,26 @@ Installed packs live in `~/.bench-my-llm/suites` (override the base
 directory with `BENCH_MY_LLM_HOME`). Try it locally with the bundled
 example: `bench-my-llm suite install example-basics -r examples/registry.json`.
 
+Publishing your own packs is the reverse direction: validate a suite
+file and add it to a registry in one step.
+
+```bash
+# Validate a suite and print its registry entry as JSON
+bench-my-llm suite publish my_suite.json
+
+# Write the entry into a registry file (created if missing)
+bench-my-llm suite publish my_suite.json -r registry.json -n my-pack -v 1.0.0
+
+# Bump an existing pack
+bench-my-llm suite publish my_suite.json -r registry.json -n my-pack -v 1.1.0 --force
+```
+
+The suite is validated before anything is written, existing registry
+entries are preserved, and the URL is stored relative to the registry
+when the suite file lives in the same directory tree, so the pair
+stays portable. Host the resulting registry anywhere static files can
+be served and teammates can `suite install` from it.
+
 ### Prompt Suites
 
 | Suite | Description | Prompts |
