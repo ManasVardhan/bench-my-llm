@@ -26,7 +26,7 @@ Point `bench-my-llm` at any OpenAI-compatible API and get latency, throughput, c
 - 📈 **Historical Trends** - Track quality, speed, and cost per model over time with sparklines
 - 🦙 **Ollama Auto-Detection** - Find local models and benchmark them with a single flag
 - 🧮 **Custom Prompt Suites** - Load your own domain-specific prompts from JSON or YAML files
-- 📦 **Suite Packs** - Install shareable prompt suites by name from a simple JSON registry
+- 📦 **Suite Packs** - Install, update, and publish shareable prompt suites by name from a simple JSON registry
 
 ## 🚀 Quick Start
 
@@ -167,6 +167,30 @@ bench-my-llm run --model gpt-4o --suite support-basics
 # Remove a pack
 bench-my-llm suite remove support-basics
 ```
+
+Keep installed packs current with `suite update`. It re-fetches each
+pack's registry from the source recorded at install time, reinstalls
+packs whose registry version changed, and reports the rest as up to
+date.
+
+```bash
+# Check and update every installed pack
+bench-my-llm suite update
+
+# Update specific packs only
+bench-my-llm suite update support-basics other-pack
+
+# Reinstall even when the version is unchanged
+bench-my-llm suite update --force
+
+# Point at a different registry, or get machine-readable results
+bench-my-llm suite update support-basics -r new-registry.json
+bench-my-llm suite update --json-output
+```
+
+Update failures (a registry that moved, a pack pulled from its
+registry) are reported per pack without aborting the rest, and the
+command exits nonzero if anything failed.
 
 Installed packs live in `~/.bench-my-llm/suites` (override the base
 directory with `BENCH_MY_LLM_HOME`). Try it locally with the bundled

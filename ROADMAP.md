@@ -23,10 +23,13 @@ Share and install community prompt suites as versioned packs. A registry is a JS
 ### 🧪 Suite Pack Publishing
 Generate a registry entry and validate a suite for sharing with a `suite publish` helper, so teams can maintain their own pack registries with less hand-editing. Without `--registry` it prints the validated entry as JSON; with `--registry` it merges the entry into a local registry file (created if missing), preserving other entries, storing relative URLs when the suite sits next to the registry, and requiring `--force` to overwrite an existing pack.
 
-## v0.2 (Planned)
-
 ### 🔁 Suite Pack Updates
-A `suite update` command that re-fetches installed packs from their recorded registry source and reports version changes.
+Keep installed packs current with `suite update`: re-fetches each pack's registry from the source recorded at install time, reinstalls packs whose registry version changed, and reports the rest as up to date. Update specific packs by name or all at once, `--force` to reinstall without a version change, `--registry` to point at a moved registry (the new source is recorded), `--json-output` for scripting, and per-pack error reporting with a nonzero exit if anything failed. Python API: `update_pack`, `update_all`, `UpdateResult`.
+
+## v0.3 (Planned)
+
+### 🧾 Run Metadata and Notes
+Attach free-form notes and captured environment metadata (endpoint, temperature, suite version) to saved benchmark results so historical comparisons stay interpretable.
 
 ---
 

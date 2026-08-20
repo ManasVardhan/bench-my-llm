@@ -63,6 +63,17 @@ class InstalledPack:
     file: Path
 
 
+@dataclass
+class UpdateResult:
+    """Outcome of updating one installed pack."""
+
+    name: str
+    status: str  # "updated", "up-to-date", "reinstalled", or "error"
+    old_version: str = ""
+    new_version: str = ""
+    message: str = ""
+
+
 def packs_dir() -> Path:
     """Return the directory where installed suite packs are stored."""
     home = os.environ.get(HOME_ENV)
@@ -106,7 +117,7 @@ def _resolve_url(url: str, registry_source: str) -> str:
     path = Path(url).expanduser()
     if path.is_absolute():
         return str(path)
-    return str((Path(registry_source).expanduser().parent / path))
+    return str(Path(registry_source).expanduser().parent / path)
 
 
 def load_registry(source: str) -> dict[str, PackInfo]:
@@ -269,6 +280,98 @@ def remove_pack(name: str, directory: Path | None = None) -> None:
         file.unlink()
     del manifest[name]
     _save_manifest(directory, manifest)
+
+
+def update_pack(
+    name: str,
+    directory: Path | None = None,
+    registry_source: str | None = None,
+    force: bool = False,
+) -> UpdateResult:
+    """Update one installed pack from its recorded registry source.
+
+    Re-fetches the registry, compares the pack version against the
+    installed one, and reinstalls when the version changed (or always,
+    with force=True). Pass registry_source to override the recorded
+    registry. Raises PackError when the pack is not installed, has no
+    usable registry source, disappeared from the registry, or the
+    fetch or validation fails.
+    """
+    directory = directory if directory is not None else packs_dir()
+    manifest = _load_manifest(directory)
+    if name not in manifest:
+        raise PackError(f"Pack '{name}' is not installed.")
+
+    entry = manifest[name]
+    old_version = entry.get("version", "0.0.0")
+    source = registry_source or entry.get("source", "")
+    if not source:
+        raise PackError(
+            f"Pack '{name}' has no recorded registry source. "
+            "Pass --registry to update it from a specific registry."
+        )
+
+    registry = load_registry(source)
+    if name not in registry:
+        raise PackError(
+            f"Pack '{name}' is no longer present in registry {source}."
+        )
+
+    new_version = registry[name].version
+    if new_version == old_version and not force:
+        if registry_source and registry_source != entry.get("source", ""):
+            # Record the overriding registry so future updates use it.
+            entry["source"] = registry_source
+            manifest[name] = entry
+            _save_manifest(directory, manifest)
+        return UpdateResult(
+            name=name,
+            status="up-to-date",
+            old_version=old_version,
+            new_version=new_version,
+        )
+
+    install_pack(name, source, directory)
+    return UpdateResult(
+        name=name,
+        status="updated" if new_version != old_version else "reinstalled",
+        old_version=old_version,
+        new_version=new_version,
+    )
+
+
+def update_all(
+    directory: Path | None = None,
+    registry_source: str | None = None,
+    force: bool = False,
+) -> list[UpdateResult]:
+    """Update every installed pack, collecting per-pack results.
+
+    Failures never abort the run; they are reported as results with
+    status "error" and the failure reason in message.
+    """
+    directory = directory if directory is not None else packs_dir()
+    results = []
+    for pack in list_installed(directory):
+        try:
+            results.append(
+                update_pack(
+                    pack.name,
+                    directory=directory,
+                    registry_source=registry_source,
+                    force=force,
+                )
+            )
+        except PackError as exc:
+            results.append(
+                UpdateResult(
+                    name=pack.name,
+                    status="error",
+                    old_version=pack.version,
+                    message=str(exc),
+                )
+            )
+    return results
 
 
 def _validate_pack_name(name: str) -> str:

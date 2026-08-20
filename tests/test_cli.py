@@ -50,7 +50,8 @@ class TestCLIVersion:
         result = runner.invoke(cli, ["--version"])
         assert result.exit_code == 0
         assert "bench-my-llm" in result.output
-        assert "0.1.1" in result.output
+        from bench_my_llm import __version__
+        assert __version__ in result.output
 
     def test_help_flag(self, runner):
         result = runner.invoke(cli, ["--help"])

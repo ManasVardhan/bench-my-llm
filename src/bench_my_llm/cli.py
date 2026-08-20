@@ -282,7 +282,7 @@ def suites() -> None:
 
 @cli.group()
 def suite() -> None:
-    """Manage installable suite packs (install, list, remove)."""
+    """Manage installable suite packs (install, list, update, remove)."""
 
 
 @suite.command(name="install")
@@ -441,6 +441,114 @@ def suite_publish(
         f"[dim]Install it with: bench-my-llm suite install {pack.name} "
         f"-r {registry}[/dim]"
     )
+
+
+@suite.command(name="update")
+@click.argument("names", nargs=-1)
+@click.option(
+    "--registry",
+    "-r",
+    default=None,
+    help="Override the recorded registry source for the packs being updated.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Reinstall packs even when the registry version is unchanged.",
+)
+@click.option("--json-output", is_flag=True, help="Output as JSON instead of a table.")
+def suite_update(
+    names: tuple[str, ...],
+    registry: str | None,
+    force: bool,
+    json_output: bool,
+) -> None:
+    """Update installed suite packs from their recorded registries.
+
+    With no names, every installed pack is checked. Packs whose
+    registry version changed are re-fetched and reinstalled; use
+    --force to reinstall even without a version change.
+
+    Example: bench-my-llm suite update support-basics
+    """
+    import json as json_mod
+
+    from rich.markup import escape
+
+    from .packs import (
+        PackError,
+        UpdateResult,
+        list_installed,
+        packs_dir,
+        update_all,
+        update_pack,
+    )
+
+    if names:
+        results = []
+        for name in names:
+            try:
+                results.append(
+                    update_pack(name, registry_source=registry, force=force)
+                )
+            except PackError as exc:
+                results.append(
+                    UpdateResult(name=name, status="error", message=str(exc))
+                )
+    else:
+        if not list_installed():
+            console.print(
+                f"[dim]No suite packs installed in {packs_dir()}. "
+                "Install one with: bench-my-llm suite install <name> -r <registry>[/dim]"
+            )
+            return
+        results = update_all(registry_source=registry, force=force)
+
+    failed = any(r.status == "error" for r in results)
+
+    if json_output:
+        data = [
+            {
+                "name": r.name,
+                "status": r.status,
+                "old_version": r.old_version,
+                "new_version": r.new_version,
+                "message": r.message,
+            }
+            for r in results
+        ]
+        click.echo(json_mod.dumps(data, indent=2))
+        if failed:
+            raise SystemExit(1)
+        return
+
+    for r in results:
+        if r.status == "updated":
+            console.print(
+                f"[green]Updated[/] [bold cyan]{r.name}[/] "
+                f"v{r.old_version} -> v{r.new_version}"
+            )
+        elif r.status == "reinstalled":
+            console.print(
+                f"[green]Reinstalled[/] [bold cyan]{r.name}[/] v{r.new_version}"
+            )
+        elif r.status == "up-to-date":
+            console.print(
+                f"[bold cyan]{r.name}[/] v{r.old_version} is up to date"
+            )
+        else:
+            console.print(
+                f"[red]Failed[/] [bold cyan]{escape(r.name)}[/]: "
+                f"{escape(r.message)}"
+            )
+
+    updated = sum(1 for r in results if r.status in ("updated", "reinstalled"))
+    console.print(
+        f"\n[dim]{len(results)} pack(s) checked, {updated} updated, "
+        f"{sum(1 for r in results if r.status == 'error')} failed.[/dim]"
+    )
+    if failed:
+        raise SystemExit(1)
 
 
 @suite.command(name="remove")
