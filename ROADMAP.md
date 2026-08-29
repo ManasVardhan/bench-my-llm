@@ -26,10 +26,13 @@ Generate a registry entry and validate a suite for sharing with a `suite publish
 ### 🔁 Suite Pack Updates
 Keep installed packs current with `suite update`: re-fetches each pack's registry from the source recorded at install time, reinstalls packs whose registry version changed, and reports the rest as up to date. Update specific packs by name or all at once, `--force` to reinstall without a version change, `--registry` to point at a moved registry (the new source is recorded), `--json-output` for scripting, and per-pack error reporting with a nonzero exit if anything failed. Python API: `update_pack`, `update_all`, `UpdateResult`.
 
-## v0.3 (Planned)
-
 ### 🧾 Run Metadata and Notes
-Attach free-form notes and captured environment metadata (endpoint, temperature, suite version) to saved benchmark results so historical comparisons stay interpretable.
+Attach free-form notes and captured environment metadata to saved benchmark results so historical comparisons stay interpretable. Pass `--note` on `run` to record a note, and every saved result now carries a metadata block: the note, endpoint, temperature, suite descriptor (name and prompt count), tool version, and capture timestamp. The terminal report prints a Run Metadata panel when anything is set, saved JSON gains a `metadata` object, and loading older result files without a metadata block still works. Python API: `RunMetadata` and the `metadata` field on `BenchmarkRun`.
+
+## v0.4 (Planned)
+
+### 🔬 Metadata Filtering and Diffing
+Filter and diff saved runs by their captured metadata (endpoint, temperature, tool version) so you can compare like-for-like configurations and spot when an environment change moved the numbers.
 
 ---
 

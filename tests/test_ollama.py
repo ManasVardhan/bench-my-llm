@@ -272,7 +272,7 @@ class TestOllamaCommand:
 # -----------------------------------------------------------------------
 
 def _fake_run(model, suite, base_url=None, api_key=None, temperature=0.0,
-              on_progress=None):
+              on_progress=None, notes=""):
     from bench_my_llm.runner import BenchmarkResult, BenchmarkRun
 
     run = BenchmarkRun(model=model, suite_name=suite.name,

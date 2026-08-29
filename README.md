@@ -27,6 +27,7 @@ Point `bench-my-llm` at any OpenAI-compatible API and get latency, throughput, c
 - 🦙 **Ollama Auto-Detection** - Find local models and benchmark them with a single flag
 - 🧮 **Custom Prompt Suites** - Load your own domain-specific prompts from JSON or YAML files
 - 📦 **Suite Packs** - Install, update, and publish shareable prompt suites by name from a simple JSON registry
+- 🧾 **Run Metadata and Notes** - Every saved result records the endpoint, temperature, suite, tool version, and an optional note so old numbers stay interpretable
 
 ## 🚀 Quick Start
 
@@ -236,6 +237,36 @@ bench-my-llm report results.json
 bench-my-llm export results.json --format markdown
 bench-my-llm export results.json --format csv -o results.csv
 ```
+
+### Run Metadata and Notes
+
+Every benchmark run captures its environment automatically: endpoint,
+temperature, suite (name and prompt count), tool version, and a UTC
+timestamp. Add a free-form note with `--note` to remember why you ran it:
+
+```bash
+bench-my-llm run --model gpt-4o --suite reasoning \
+  --note "baseline before prompt rewrite" --output baseline.json
+```
+
+The terminal report prints a Run Metadata panel, and the saved JSON gains
+a `metadata` object:
+
+```json
+{
+  "metadata": {
+    "notes": "baseline before prompt rewrite",
+    "endpoint": "https://api.openai.com/v1",
+    "temperature": 0.0,
+    "suite_version": "reasoning (5 prompts)",
+    "tool_version": "0.3.0",
+    "captured_at": "2026-08-29T05:00:00+00:00"
+  }
+}
+```
+
+Older result files without a metadata block still load fine. Python API:
+`RunMetadata` and the `metadata` field on `BenchmarkRun`.
 
 ### HTML Reports
 

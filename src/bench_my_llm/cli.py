@@ -15,11 +15,10 @@ from .ollama import (
     openai_base_url,
     resolve_ollama_model,
 )
-from .prompts import get_suite, SUITES
+from .prompts import SUITES, get_suite
 from .reporter import print_report
 from .runner import BenchmarkRun, run_benchmark
 from .suite_file import SuiteFileError, load_suite_file, looks_like_suite_file
-
 
 console = Console()
 
@@ -117,6 +116,8 @@ def cli() -> None:
 @click.option("--api-key", "-k", default=None, help="API key (defaults to OPENAI_API_KEY)")
 @click.option("--temperature", "-t", default=0.0, type=float, help="Sampling temperature")
 @click.option("--output", "-o", default=None, help="Save results to JSON file")
+@click.option("--note", "-n", default="",
+              help="Free-form note stored in the saved result's metadata.")
 @click.option("--ollama", is_flag=True,
               help="Benchmark a local Ollama model (auto-detects the server).")
 def run(
@@ -126,6 +127,7 @@ def run(
     api_key: str | None,
     temperature: float,
     output: str | None,
+    note: str,
     ollama: bool,
 ) -> None:
     """Run a benchmark suite against a model."""
@@ -155,6 +157,7 @@ def run(
             api_key=api_key,
             temperature=temperature,
             on_progress=on_progress,
+            notes=note,
         )
 
     print_report(benchmark_run, console)

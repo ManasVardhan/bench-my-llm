@@ -104,4 +104,23 @@ def print_report(run: BenchmarkRun, console: Console | None = None) -> None:
         )
 
     console.print(detail)
+
+    # Run metadata and notes
+    meta = run.metadata
+    if meta is not None and not meta.is_empty():
+        info = Table(title="Run Metadata", border_style="dim", show_header=False)
+        info.add_column("Field", style="bold")
+        info.add_column("Value")
+        if meta.notes:
+            info.add_row("Notes", meta.notes)
+        if meta.endpoint:
+            info.add_row("Endpoint", meta.endpoint)
+        info.add_row("Temperature", f"{meta.temperature}")
+        if meta.suite_version:
+            info.add_row("Suite", meta.suite_version)
+        if meta.tool_version:
+            info.add_row("Tool Version", meta.tool_version)
+        if meta.captured_at:
+            info.add_row("Captured At", meta.captured_at)
+        console.print(info)
     console.print()

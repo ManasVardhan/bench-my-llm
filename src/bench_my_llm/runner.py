@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import time
 from collections.abc import Callable
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Any, cast
 
@@ -36,6 +36,38 @@ class BenchmarkResult:
 
 
 @dataclass
+class RunMetadata:
+    """Free-form notes and captured environment metadata for a run.
+
+    Attached to saved results so historical comparisons stay interpretable:
+    you can tell later which endpoint, temperature, and tool version produced
+    a given result, and read any note left at run time.
+    """
+
+    notes: str = ""
+    endpoint: str = ""
+    temperature: float = 0.0
+    suite_version: str = ""
+    tool_version: str = ""
+    captured_at: str = ""
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    def is_empty(self) -> bool:
+        """True when no metadata field carries information worth showing."""
+        return not any(
+            [
+                self.notes,
+                self.endpoint,
+                self.suite_version,
+                self.tool_version,
+                self.captured_at,
+            ]
+        )
+
+
+@dataclass
 class BenchmarkRun:
     """Collection of results from a full benchmark run."""
 
@@ -44,27 +76,36 @@ class BenchmarkRun:
     base_url: str
     results: list[BenchmarkResult] = field(default_factory=list)
     timestamp: str = ""
+    metadata: RunMetadata | None = None
 
     def save(self, path: str | Path) -> None:
         """Save results to a JSON file."""
-        out = {
+        out: dict[str, Any] = {
             "model": self.model,
             "suite": self.suite_name,
             "base_url": self.base_url,
             "timestamp": self.timestamp,
             "results": [r.to_dict() for r in self.results],
         }
+        if self.metadata is not None:
+            out["metadata"] = self.metadata.to_dict()
         Path(path).write_text(json.dumps(out, indent=2))
 
     @classmethod
-    def load(cls, path: str | Path) -> "BenchmarkRun":
+    def load(cls, path: str | Path) -> BenchmarkRun:
         """Load results from a JSON file."""
         data = json.loads(Path(path).read_text())
+        meta_raw = data.get("metadata")
+        metadata = None
+        if isinstance(meta_raw, dict):
+            known = {f.name for f in fields(RunMetadata)}
+            metadata = RunMetadata(**{k: v for k, v in meta_raw.items() if k in known})
         run = cls(
             model=data["model"],
             suite_name=data["suite"],
             base_url=data.get("base_url", ""),
             timestamp=data.get("timestamp", ""),
+            metadata=metadata,
         )
         run.results = [BenchmarkResult(**r) for r in data["results"]]
         return run
@@ -137,6 +178,7 @@ def run_benchmark(
     api_key: str | None = None,
     temperature: float = 0.0,
     on_progress: Callable[[int, int, object], None] | None = None,
+    notes: str = "",
 ) -> BenchmarkRun:
     """Run a full benchmark suite against a model.
 
@@ -147,11 +189,14 @@ def run_benchmark(
         api_key: Optional API key (defaults to OPENAI_API_KEY env var).
         temperature: Sampling temperature.
         on_progress: Optional callback(index, total, result) for progress updates.
+        notes: Optional free-form note stored in the run metadata.
 
     Returns:
         BenchmarkRun with all results.
     """
     import datetime
+
+    from . import __version__
 
     client_kwargs: dict = {}
     if base_url:
@@ -161,11 +206,22 @@ def run_benchmark(
 
     client = OpenAI(**client_kwargs)
 
+    endpoint = base_url or "https://api.openai.com/v1"
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
     run = BenchmarkRun(
         model=model,
         suite_name=suite.name,
-        base_url=base_url or "https://api.openai.com/v1",
-        timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        base_url=endpoint,
+        timestamp=now,
+        metadata=RunMetadata(
+            notes=notes,
+            endpoint=endpoint,
+            temperature=temperature,
+            suite_version=f"{suite.name} ({len(suite.prompts)} prompts)",
+            tool_version=__version__,
+            captured_at=now,
+        ),
     )
 
     for i, prompt in enumerate(suite.prompts):
