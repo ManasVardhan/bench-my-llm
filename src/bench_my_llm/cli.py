@@ -1048,5 +1048,184 @@ def trends(results_dir: str, metric: str, model: str | None, json_output: bool) 
     )
 
 
+@cli.group()
+def runs() -> None:
+    """Filter and diff saved runs by their captured metadata."""
+
+
+@runs.command(name="filter")
+@click.argument("results_dir", type=click.Path(exists=True))
+@click.option("--model", "-m", default=None, help="Filter by model name (substring).")
+@click.option("--endpoint", "-e", default=None, help="Filter by endpoint (substring).")
+@click.option("--temperature", "-t", default=None, type=float,
+              help="Filter by exact temperature.")
+@click.option("--tool-version", default=None, help="Filter by tool version (substring).")
+@click.option("--json-output", is_flag=True, help="Output as JSON instead of a table.")
+def runs_filter(
+    results_dir: str,
+    model: str | None,
+    endpoint: str | None,
+    temperature: float | None,
+    tool_version: str | None,
+    json_output: bool,
+) -> None:
+    """List saved runs matching metadata criteria for like-for-like reads.
+
+    Point it at a directory of saved result JSON files and narrow down to
+    the runs sharing an endpoint, temperature, or tool version so you only
+    compare comparable configurations.
+
+    Example: bench-my-llm runs filter ./results/ --endpoint api.openai.com -t 0
+    """
+    import json
+
+    from rich.table import Table
+
+    from .metadata_query import filter_runs, load_runs
+
+    try:
+        all_runs = load_runs(results_dir)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise SystemExit(1)
+
+    matched = filter_runs(
+        all_runs,
+        model=model,
+        endpoint=endpoint,
+        temperature=temperature,
+        tool_version=tool_version,
+    )
+
+    if json_output:
+        click.echo(json.dumps([r.to_dict() for r in matched], indent=2))
+        return
+
+    if not matched:
+        console.print("[yellow]No runs match those metadata criteria.[/]")
+        return
+
+    console.print()
+    table = Table(
+        title=f"Saved Runs ({len(matched)} matching)",
+        border_style="cyan",
+        show_lines=True,
+    )
+    table.add_column("File", style="dim")
+    table.add_column("Model", style="bold cyan")
+    table.add_column("Endpoint")
+    table.add_column("Temp", justify="right")
+    table.add_column("Tool", justify="right", style="dim")
+    table.add_column("Quality", justify="right")
+    table.add_column("TTFT p50", justify="right")
+    table.add_column("Cost", justify="right", style="green")
+
+    for r in matched:
+        table.add_row(
+            r.source_file,
+            r.model,
+            r.metadata.endpoint or "?",
+            r.meta_value("temperature"),
+            r.metadata.tool_version or "?",
+            f"{r.quality:.0%}",
+            f"{r.ttft_p50_ms:.0f}ms",
+            f"${r.cost_usd:.4f}",
+        )
+
+    console.print(table)
+    console.print(
+        f"\n[dim]Showing {len(matched)} of {len(all_runs)} run(s) in {results_dir}. "
+        "Diff any two with: bench-my-llm runs diff <dir> <old> <new>[/]\n"
+    )
+
+
+@runs.command(name="diff")
+@click.argument("results_dir", type=click.Path(exists=True))
+@click.argument("old_run")
+@click.argument("new_run")
+@click.option("--json-output", is_flag=True, help="Output as JSON instead of a table.")
+def runs_diff(results_dir: str, old_run: str, new_run: str, json_output: bool) -> None:
+    """Diff two saved runs by metadata and metrics.
+
+    Select each run by its file name (or a unique substring). The output
+    shows which captured metadata changed between them and how each
+    headline metric moved, so an environment change that shifted the
+    numbers is easy to spot.
+
+    Example: bench-my-llm runs diff ./results/ before.json after.json
+    """
+    import json
+
+    from rich.table import Table
+
+    from .metadata_query import diff_runs, find_run, load_runs
+
+    try:
+        all_runs = load_runs(results_dir)
+        old = find_run(all_runs, old_run)
+        new = find_run(all_runs, new_run)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise SystemExit(1)
+
+    diff = diff_runs(old, new)
+
+    if json_output:
+        click.echo(json.dumps(diff.to_dict(), indent=2))
+        return
+
+    console.print()
+    console.print(
+        f"[bold]Diff[/] [dim]{old.source_file}[/] -> [dim]{new.source_file}[/]"
+    )
+
+    changed = diff.changed_fields
+    meta_table = Table(
+        title="Metadata Changes",
+        border_style="yellow",
+        show_lines=True,
+    )
+    meta_table.add_column("Field", style="bold")
+    meta_table.add_column("Old")
+    meta_table.add_column("New")
+    if changed:
+        for f in changed:
+            meta_table.add_row(f.field, f.old or "?", f.new or "?")
+        console.print()
+        console.print(meta_table)
+    else:
+        console.print("\n[dim]No metadata changed between these runs.[/]")
+
+    console.print()
+    metric_table = Table(
+        title="Metric Changes",
+        border_style="magenta",
+        show_lines=True,
+    )
+    metric_table.add_column("Metric", style="bold cyan")
+    metric_table.add_column("Old", justify="right")
+    metric_table.add_column("New", justify="right")
+    metric_table.add_column("Change", justify="right")
+
+    from .trends import format_metric_value
+
+    arrows = {"improving": "[green]▲", "declining": "[red]▼", "flat": "[dim]="}
+    for m in diff.metrics:
+        pct = m.delta_pct
+        pct_text = "n/a" if pct is None else f"{pct:+.1f}%"
+        metric_table.add_row(
+            m.metric,
+            format_metric_value(m.metric, m.old),
+            format_metric_value(m.metric, m.new),
+            f"{arrows[m.direction]} {pct_text}[/]",
+        )
+
+    console.print(metric_table)
+    console.print(
+        "\n[dim]▲ improving, ▼ declining, = flat. "
+        "For ttft, latency, and cost, lower is better.[/]\n"
+    )
+
+
 if __name__ == "__main__":
     cli()

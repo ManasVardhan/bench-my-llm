@@ -28,6 +28,7 @@ Point `bench-my-llm` at any OpenAI-compatible API and get latency, throughput, c
 - 🧮 **Custom Prompt Suites** - Load your own domain-specific prompts from JSON or YAML files
 - 📦 **Suite Packs** - Install, update, and publish shareable prompt suites by name from a simple JSON registry
 - 🧾 **Run Metadata and Notes** - Every saved result records the endpoint, temperature, suite, tool version, and an optional note so old numbers stay interpretable
+- 🔬 **Metadata Filtering and Diffing** - Filter saved runs to like-for-like configs and diff any two to see which metadata changed and how the numbers moved
 
 ## 🚀 Quick Start
 
@@ -317,6 +318,37 @@ llama3       4  ▅▄▃▂         55%      48%  ▼ -12.7%
 Metrics: `quality` (default), `tps`, `ttft`, `latency`, `cost`. For
 `ttft`, `latency`, and `cost`, lower is better and the arrows account
 for that.
+
+### Filter and Diff Runs by Metadata
+
+Every saved run carries a metadata block (endpoint, temperature, tool
+version, suite). Use it to narrow a results directory down to
+like-for-like configurations, then diff any two runs to see which
+metadata changed and how the numbers moved:
+
+```bash
+bench-my-llm runs filter ./results/ --endpoint api.openai.com -t 0
+bench-my-llm runs filter ./results/ --tool-version 0.4 --json-output
+bench-my-llm runs diff ./results/ before.json after.json
+```
+
+`runs filter` matches `--model`, `--endpoint`, and `--tool-version` on
+substrings and `--temperature` exactly; with no criteria it lists every
+run. `runs diff` selects each run by file name or a unique substring and
+prints a metadata change table plus per-metric deltas (using the same
+lower-is-better arrows as trends), so an environment change that shifted
+the results is easy to spot:
+
+```
+        Metadata Changes
+Field         Old    New
+temperature   0      0.7
+tool_version  0.3.0  0.4.0
+
+              Metric Changes
+Metric   Old      New      Change
+latency  800ms    400ms    ▲ -50.0%
+```
 
 ### Local Models (Ollama)
 

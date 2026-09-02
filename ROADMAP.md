@@ -29,10 +29,13 @@ Keep installed packs current with `suite update`: re-fetches each pack's registr
 ### 🧾 Run Metadata and Notes
 Attach free-form notes and captured environment metadata to saved benchmark results so historical comparisons stay interpretable. Pass `--note` on `run` to record a note, and every saved result now carries a metadata block: the note, endpoint, temperature, suite descriptor (name and prompt count), tool version, and capture timestamp. The terminal report prints a Run Metadata panel when anything is set, saved JSON gains a `metadata` object, and loading older result files without a metadata block still works. Python API: `RunMetadata` and the `metadata` field on `BenchmarkRun`.
 
-## v0.4 (Planned)
-
 ### 🔬 Metadata Filtering and Diffing
-Filter and diff saved runs by their captured metadata (endpoint, temperature, tool version) so you can compare like-for-like configurations and spot when an environment change moved the numbers.
+Filter and diff saved runs by their captured metadata so you compare like-for-like configurations and spot when an environment change moved the numbers. The `runs filter` command narrows a results directory by `--model`, `--endpoint`, `--tool-version` (substring) and `--temperature` (exact), with a table or `--json-output`. The `runs diff` command selects two runs by file name or unique substring and prints a metadata change table plus per-metric deltas (quality, tps, ttft, latency, cost) using the same lower-is-better arrows as trends. Python API: `load_runs`, `filter_runs`, `diff_runs`, `find_run`, and the `LoadedRun`/`RunDiff` dataclasses.
+
+## v0.5 (Planned)
+
+### 🏷️ Metadata Grouping and Aggregation
+Group saved runs by a metadata field (endpoint, temperature, tool version) and report aggregate metrics per group, so you can answer questions like "how did average quality differ between two endpoints across all runs" without diffing pairs by hand.
 
 ---
 
