@@ -22,19 +22,19 @@ def runner() -> CliRunner:
 
 
 def _make_result(model: str = "m", **overrides) -> BenchmarkResult:
-    defaults = dict(
-        model=model,
-        prompt_text="q",
-        category="reasoning",
-        response_text="a a a",
-        ttft_ms=100.0,
-        total_latency_ms=500.0,
-        tokens_generated=50,
-        tokens_per_second=40.0,
-        prompt_tokens=20,
-        completion_tokens=50,
-        reference="a a a",
-    )
+    defaults = {
+        "model": model,
+        "prompt_text": "q",
+        "category": "reasoning",
+        "response_text": "a a a",
+        "ttft_ms": 100.0,
+        "total_latency_ms": 500.0,
+        "tokens_generated": 50,
+        "tokens_per_second": 40.0,
+        "prompt_tokens": 20,
+        "completion_tokens": 50,
+        "reference": "a a a",
+    }
     defaults.update(overrides)
     return BenchmarkResult(**defaults)
 

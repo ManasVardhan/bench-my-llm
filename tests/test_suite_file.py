@@ -17,7 +17,6 @@ from bench_my_llm.suite_file import (
     looks_like_suite_file,
 )
 
-
 VALID_SUITE = {
     "name": "my-suite",
     "description": "Test suite",
@@ -195,9 +194,9 @@ class TestLoadSuiteFileYAML:
                 raise ImportError("no yaml")
             return real_import(name, *args, **kwargs)
 
-        with patch.object(builtins, "__import__", side_effect=fake_import):
-            with pytest.raises(SuiteFileError, match="pyyaml"):
-                load_suite_file(path)
+        with patch.object(builtins, "__import__", side_effect=fake_import), \
+                pytest.raises(SuiteFileError, match="pyyaml"):
+            load_suite_file(path)
 
 
 class TestCLICustomSuite:

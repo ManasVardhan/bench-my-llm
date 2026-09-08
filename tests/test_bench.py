@@ -7,13 +7,13 @@ from pathlib import Path
 
 import pytest
 
-from bench_my_llm.prompts import get_suite, SUITES
 from bench_my_llm.metrics import (
     compute_latency_stats,
+    compute_metrics,
     estimate_cost,
     score_quality,
-    compute_metrics,
 )
+from bench_my_llm.prompts import SUITES, get_suite
 from bench_my_llm.runner import BenchmarkResult, BenchmarkRun
 
 

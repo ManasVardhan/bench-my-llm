@@ -231,7 +231,7 @@ class TestMainModule:
     def test_main_version_subprocess(self):
         result = subprocess.run(
             [sys.executable, "-m", "bench_my_llm", "--version"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, check=False,
         )
         assert result.returncode == 0
         assert "bench-my-llm" in result.stdout
@@ -239,7 +239,7 @@ class TestMainModule:
     def test_main_help_subprocess(self):
         result = subprocess.run(
             [sys.executable, "-m", "bench_my_llm", "--help"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, check=False,
         )
         assert result.returncode == 0
         assert "bench-my-llm" in result.stdout
@@ -247,7 +247,7 @@ class TestMainModule:
     def test_main_export_help(self):
         result = subprocess.run(
             [sys.executable, "-m", "bench_my_llm", "export", "--help"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, check=False,
         )
         assert result.returncode == 0
         assert "--format" in result.stdout
@@ -255,7 +255,7 @@ class TestMainModule:
     def test_main_history_help(self):
         result = subprocess.run(
             [sys.executable, "-m", "bench_my_llm", "history", "--help"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, check=False,
         )
         assert result.returncode == 0
         assert "--model" in result.stdout

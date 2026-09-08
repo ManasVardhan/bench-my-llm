@@ -6,7 +6,7 @@ from io import StringIO
 
 from rich.console import Console
 
-from bench_my_llm.reporter import print_report, _quality_color, _tps_color
+from bench_my_llm.reporter import _quality_color, _tps_color, print_report
 from bench_my_llm.runner import BenchmarkResult, BenchmarkRun
 
 

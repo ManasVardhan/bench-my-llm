@@ -16,7 +16,6 @@ from bench_my_llm.metrics import (
     score_quality,
 )
 
-
 # ---------------------------------------------------------------------------
 # CLI: suites command
 # ---------------------------------------------------------------------------
@@ -52,7 +51,7 @@ class TestSuitesCommand:
     def test_suites_subprocess(self) -> None:
         result = subprocess.run(
             [sys.executable, "-m", "bench_my_llm", "suites"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True, text=True, timeout=10, check=False,
         )
         assert result.returncode == 0
         assert "reasoning" in result.stdout
@@ -91,7 +90,7 @@ class TestModelsCommand:
     def test_models_subprocess(self) -> None:
         result = subprocess.run(
             [sys.executable, "-m", "bench_my_llm", "models"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True, text=True, timeout=10, check=False,
         )
         assert result.returncode == 0
         assert "gpt-4" in result.stdout
@@ -200,7 +199,7 @@ class TestExpandedCostTable:
 
     def test_case_insensitive_lookup(self) -> None:
         """Lookup should be case-insensitive."""
-        inp, out = _lookup_cost("GPT-4.1-MINI")
+        inp, _out = _lookup_cost("GPT-4.1-MINI")
         assert inp == 0.0004
 
     def test_estimate_cost_with_new_model(self) -> None:

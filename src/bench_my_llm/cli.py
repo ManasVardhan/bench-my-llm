@@ -1139,6 +1139,79 @@ def runs_filter(
     )
 
 
+@runs.command(name="group")
+@click.argument("results_dir", type=click.Path(exists=True))
+@click.option("--by", "-b", "group_by", default="model", show_default=True,
+              help="Metadata field to group by: model, suite, endpoint, "
+                   "temperature, tool_version, or suite_version.")
+@click.option("--model", "-m", default=None,
+              help="Only include runs whose model matches (substring).")
+@click.option("--json-output", is_flag=True, help="Output as JSON instead of a table.")
+def runs_group(results_dir: str, group_by: str, model: str | None, json_output: bool) -> None:
+    """Group saved runs by a metadata field and aggregate metrics per group.
+
+    Answers questions like "how did average quality differ between two
+    endpoints across all runs" without diffing pairs by hand. Each group
+    reports mean quality, tps, ttft, latency, and cost across its runs
+    (min and max are included in the JSON output).
+
+    Example: bench-my-llm runs group ./results/ --by endpoint
+    """
+    import json
+
+    from rich.table import Table
+
+    from .metadata_query import filter_runs, group_runs, load_runs
+    from .trends import format_metric_value
+
+    try:
+        all_runs = load_runs(results_dir)
+        matched = filter_runs(all_runs, model=model)
+        groups = group_runs(matched, group_by)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/]")
+        raise SystemExit(1)
+
+    if json_output:
+        click.echo(json.dumps([g.to_dict() for g in groups], indent=2))
+        return
+
+    if not groups:
+        console.print("[yellow]No saved runs found to group.[/]")
+        return
+
+    console.print()
+    table = Table(
+        title=f"Runs Grouped by {group_by} ({len(matched)} run(s), {len(groups)} group(s))",
+        border_style="cyan",
+        show_lines=True,
+    )
+    table.add_column(group_by, style="bold cyan")
+    table.add_column("Runs", justify="right")
+    table.add_column("Quality", justify="right")
+    table.add_column("TPS", justify="right")
+    table.add_column("TTFT p50", justify="right")
+    table.add_column("Latency p50", justify="right")
+    table.add_column("Cost", justify="right", style="green")
+
+    for g in groups:
+        table.add_row(
+            g.key,
+            str(g.count),
+            format_metric_value("quality", g.aggregates["quality"].mean),
+            format_metric_value("tps", g.aggregates["tps"].mean),
+            format_metric_value("ttft", g.aggregates["ttft"].mean),
+            format_metric_value("latency", g.aggregates["latency"].mean),
+            format_metric_value("cost", g.aggregates["cost"].mean),
+        )
+
+    console.print(table)
+    console.print(
+        "\n[dim]Values are means across each group's runs. "
+        "Use --json-output for min/max and member files.[/]\n"
+    )
+
+
 @runs.command(name="diff")
 @click.argument("results_dir", type=click.Path(exists=True))
 @click.argument("old_run")

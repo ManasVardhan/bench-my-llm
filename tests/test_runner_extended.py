@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-
 from bench_my_llm.runner import (
     BenchmarkResult,
     BenchmarkRun,

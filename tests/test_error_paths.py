@@ -30,6 +30,7 @@ class TestRunnerErrors:
     @patch("bench_my_llm.runner.OpenAI")
     def test_auth_error_exits(self, mock_openai_cls):
         from openai import AuthenticationError
+
         from bench_my_llm.runner import run_benchmark
 
         mock_client = MagicMock()
@@ -46,6 +47,7 @@ class TestRunnerErrors:
     @patch("bench_my_llm.runner.OpenAI")
     def test_rate_limit_error_exits(self, mock_openai_cls):
         from openai import RateLimitError
+
         from bench_my_llm.runner import run_benchmark
 
         mock_client = MagicMock()
@@ -62,6 +64,7 @@ class TestRunnerErrors:
     @patch("bench_my_llm.runner.OpenAI")
     def test_connection_error_exits(self, mock_openai_cls):
         from openai import APIConnectionError
+
         from bench_my_llm.runner import run_benchmark
 
         mock_client = MagicMock()
@@ -76,6 +79,7 @@ class TestRunnerErrors:
     @patch("bench_my_llm.runner.OpenAI")
     def test_timeout_error_exits(self, mock_openai_cls):
         from openai import APITimeoutError
+
         from bench_my_llm.runner import run_benchmark
 
         mock_client = MagicMock()

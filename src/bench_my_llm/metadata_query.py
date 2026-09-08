@@ -272,6 +272,102 @@ def diff_runs(old: LoadedRun, new: LoadedRun) -> RunDiff:
     return RunDiff(old=old, new=new, fields=fields, metrics=metrics)
 
 
+# fields a group key can be built from: run attributes plus metadata fields
+GROUP_FIELDS: tuple[str, ...] = (
+    "model",
+    "suite",
+    "endpoint",
+    "temperature",
+    "tool_version",
+    "suite_version",
+)
+
+
+@dataclass
+class MetricAggregate:
+    """Mean, min, and max of one metric across a group of runs."""
+
+    metric: str
+    mean: float
+    min: float
+    max: float
+
+    def to_dict(self) -> dict:
+        return {
+            "metric": self.metric,
+            "mean": self.mean,
+            "min": self.min,
+            "max": self.max,
+        }
+
+
+@dataclass
+class RunGroup:
+    """Runs sharing one value of the grouping field, with aggregates."""
+
+    field: str
+    key: str
+    runs: list[LoadedRun]
+    aggregates: dict[str, MetricAggregate]
+
+    @property
+    def count(self) -> int:
+        return len(self.runs)
+
+    def to_dict(self) -> dict:
+        return {
+            "field": self.field,
+            "key": self.key,
+            "count": self.count,
+            "source_files": [r.source_file for r in self.runs],
+            "aggregates": {name: agg.to_dict() for name, agg in self.aggregates.items()},
+        }
+
+
+def _group_key(run: LoadedRun, field: str) -> str:
+    """Return the display value of the grouping field for one run."""
+    if field == "model":
+        return run.model
+    if field == "suite":
+        return run.suite
+    return run.meta_value(field)
+
+
+def group_runs(runs: list[LoadedRun], by: str) -> list[RunGroup]:
+    """Group runs by a metadata field and aggregate metrics per group.
+
+    Runs with an empty value for the field are grouped under "(unset)".
+    Groups come back sorted by key, each with mean/min/max for every
+    diff metric across its member runs.
+
+    Raises:
+        ValueError: If the grouping field is unknown.
+    """
+    if by not in GROUP_FIELDS:
+        allowed = ", ".join(GROUP_FIELDS)
+        raise ValueError(f"Unknown group field '{by}'. Choose one of: {allowed}")
+
+    buckets: dict[str, list[LoadedRun]] = {}
+    for run in runs:
+        key = _group_key(run, by) or "(unset)"
+        buckets.setdefault(key, []).append(run)
+
+    groups: list[RunGroup] = []
+    for key in sorted(buckets):
+        members = buckets[key]
+        aggregates = {}
+        for name in DIFF_METRICS:
+            values = [r.metric(name) for r in members]
+            aggregates[name] = MetricAggregate(
+                metric=name,
+                mean=round(sum(values) / len(values), 6),
+                min=round(min(values), 6),
+                max=round(max(values), 6),
+            )
+        groups.append(RunGroup(field=by, key=key, runs=members, aggregates=aggregates))
+    return groups
+
+
 def find_run(runs: list[LoadedRun], selector: str) -> LoadedRun:
     """Resolve a run by exact source file name or a unique substring.
 

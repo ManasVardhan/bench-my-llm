@@ -29,6 +29,7 @@ Point `bench-my-llm` at any OpenAI-compatible API and get latency, throughput, c
 - 📦 **Suite Packs** - Install, update, and publish shareable prompt suites by name from a simple JSON registry
 - 🧾 **Run Metadata and Notes** - Every saved result records the endpoint, temperature, suite, tool version, and an optional note so old numbers stay interpretable
 - 🔬 **Metadata Filtering and Diffing** - Filter saved runs to like-for-like configs and diff any two to see which metadata changed and how the numbers moved
+- 🏷️ **Metadata Grouping** - Group saved runs by endpoint, temperature, model, or tool version and compare aggregate metrics per group
 
 ## 🚀 Quick Start
 
@@ -348,6 +349,32 @@ tool_version  0.3.0  0.4.0
               Metric Changes
 Metric   Old      New      Change
 latency  800ms    400ms    ▲ -50.0%
+```
+
+### Group Runs by Metadata
+
+To compare whole configurations instead of run pairs, group a results
+directory by a metadata field and read aggregate metrics per group:
+
+```bash
+bench-my-llm runs group ./results/ --by endpoint
+bench-my-llm runs group ./results/ --by temperature --model gpt-4o
+bench-my-llm runs group ./results/ --by tool_version --json-output
+```
+
+Grouping fields are `model` (the default), `suite`, `endpoint`,
+`temperature`, `tool_version`, and `suite_version`. Each group reports
+the mean quality, tokens per second, TTFT p50, latency p50, and cost
+across its member runs; `--json-output` adds min, max, and the member
+file names. Runs without a value for the field land in an `(unset)`
+group. This answers questions like "how did average quality differ
+between my two endpoints across all runs" in one command:
+
+```
+   Runs Grouped by endpoint (5 run(s), 2 group(s))
+endpoint                   Runs  Quality  TTFT p50   Cost
+http://localhost:1234/v1      3      72%     220ms  $0.0000
+https://api.openai.com/v1     2      89%      95ms  $0.0041
 ```
 
 ### Local Models (Ollama)

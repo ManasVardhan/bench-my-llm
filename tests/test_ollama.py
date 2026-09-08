@@ -101,27 +101,25 @@ class TestDetectOllamaModels:
         with patch(
             "bench_my_llm.ollama.urllib.request.urlopen",
             side_effect=urllib.error.URLError("connection refused"),
-        ):
-            with pytest.raises(OllamaNotRunningError, match="Could not reach Ollama"):
-                detect_ollama_models()
+        ), pytest.raises(OllamaNotRunningError, match="Could not reach Ollama"):
+            detect_ollama_models()
 
     def test_timeout_raises(self):
         with patch(
             "bench_my_llm.ollama.urllib.request.urlopen",
             side_effect=TimeoutError("timed out"),
-        ):
-            with pytest.raises(OllamaNotRunningError):
-                detect_ollama_models()
+        ), pytest.raises(OllamaNotRunningError):
+            detect_ollama_models()
 
     def test_invalid_json_raises(self):
-        with _urlopen_returning(b"<html>not json</html>"):
-            with pytest.raises(OllamaNotRunningError, match="invalid JSON"):
-                detect_ollama_models()
+        with _urlopen_returning(b"<html>not json</html>"), \
+                pytest.raises(OllamaNotRunningError, match="invalid JSON"):
+            detect_ollama_models()
 
     def test_missing_models_key_raises(self):
-        with _urlopen_returning(json.dumps({"status": "ok"}).encode()):
-            with pytest.raises(OllamaNotRunningError, match="missing 'models'"):
-                detect_ollama_models()
+        with _urlopen_returning(json.dumps({"status": "ok"}).encode()), \
+                pytest.raises(OllamaNotRunningError, match="missing 'models'"):
+            detect_ollama_models()
 
     def test_malformed_entries_skipped(self):
         payload = {
@@ -196,11 +194,11 @@ class TestHelpers:
 # -----------------------------------------------------------------------
 
 class TestResolveModel:
-    AVAILABLE = [
+    AVAILABLE = (
         OllamaModel("llama3:8b"),
         OllamaModel("llama3:latest"),
         OllamaModel("phi3:mini"),
-    ]
+    )
 
     def test_exact_match(self):
         assert resolve_ollama_model("llama3:8b", self.AVAILABLE) == "llama3:8b"

@@ -6,7 +6,7 @@ from io import StringIO
 
 from rich.console import Console
 
-from bench_my_llm.compare import compare_runs, _winner_style
+from bench_my_llm.compare import _winner_style, compare_runs
 from bench_my_llm.runner import BenchmarkResult, BenchmarkRun
 
 
